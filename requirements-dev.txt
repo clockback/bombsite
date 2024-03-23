@@ -1,0 +1,7 @@
+wheel
+pylint
+black
+isort
+setuptools_scm
+mypy
+build

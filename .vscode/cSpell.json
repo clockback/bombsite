@@ -1,0 +1,12 @@
+{
+    "version": "0.2",
+    "allowCompoundWords": true,
+    "words": [
+        "arange",
+        "astype",
+        "blit",
+        "dtype",
+        "numpy",
+        "pygame"
+    ]
+}

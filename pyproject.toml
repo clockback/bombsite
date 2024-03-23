@@ -1,0 +1,27 @@
+[build-system]
+requires = ["setuptools", "wheel", "setuptools_scm[toml]"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "bombsite"
+version = "0.1.0"
+authors = [{name = "Elliot Simpson", email = "elliot@p-s.co.nz"}]
+description = "Worms clone"
+requires-python = ">=3.11"
+dependencies = ["pygame==2.5.2", "numpy", "typing_extensions==4.8.0"]
+
+[project.scripts]
+bombsite = "bombsite.bombsite:main"
+
+[tool.black]
+line-length = 100
+extend-exclude = '''
+\.vscode/
+'''
+
+[tool.isort]
+line_length = 100
+profile = "black"
+
+[tool.mypy]
+files = "src/"
