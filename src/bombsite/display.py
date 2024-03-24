@@ -60,7 +60,7 @@ class Display:
 
         logger.logger.draw(self.screen)
 
-        if pf.controlled_can_attack:
+        if pf.game_state.controlled_can_attack:
             countdown = int(pf.time_left_on_clock())
             image = ticks.font.render(str(countdown), 1, pygame.Color("black"))
             self.screen.blit(image, (settings.SCREEN_WIDTH / 2 - image.get_width() / 2, 0))
