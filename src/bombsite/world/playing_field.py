@@ -9,7 +9,7 @@ import pygame
 
 import bombsite.display
 from bombsite import logger, settings, ticks
-from bombsite.world import teams, world_objects
+from bombsite.world import gamestate, teams, world_objects
 
 
 class PlayingField:
@@ -24,9 +24,7 @@ class PlayingField:
             display: The display which shows the playing field.
         """
         # Obtains and loads the image for the playing field.
-        path_to_image = (
-            Path(__file__).parent.parent / "images" / "playing_fields" / f"{name}.png"
-        )
+        path_to_image = Path(__file__).parent.parent / "images" / "playing_fields" / f"{name}.png"
         self.image: pygame.Surface = pygame.image.load(path_to_image).convert_alpha()
 
         # Finds the playing field's image's alpha array.
@@ -67,13 +65,7 @@ class PlayingField:
         self.world_objects: list[world_objects.WorldObject] = characters.copy()
 
         # Sets variables that determine the state of the game.
-        self.controlled_can_attack: bool = True
-        self.controlled_can_just_walk: bool = False
-        self.waiting_for_things_to_settle: bool = True
-        self.between_turns: bool = False
-
-        # Keeps a record of when the game state was last changed.
-        self.last_general_tick: int = 0
+        self.game_state: gamestate.GameState = gamestate.GameState()
 
         # Stores the display.
         self.display: bombsite.display.Display = display
@@ -119,43 +111,57 @@ class PlayingField:
     def process_tick(self) -> None:
         """Assesses if the game state should change."""
         # Calculates the time in seconds since the game state changed.
-        no_ticks = ticks.total_ticks - self.last_general_tick
+        no_ticks = ticks.total_ticks - self.game_state.last_general_tick
         time = no_ticks / settings.TICKS_PER_SECOND
 
         # Ends the time to attack if the user was too slow.
-        if self.controlled_can_attack:
+        if self.game_state.controlled_can_attack:
             if time > settings.TIME_TO_ACT:
                 self.controlled_character.relinquish_control()
                 self.refresh_tick()
-                self.controlled_can_attack = False
-                self.between_turns = True
+                self.game_state.controlled_can_attack = False
+                self.game_state.between_turns = True
 
         # Ends the time to walk after their attack if enough time has
         # passed.
-        elif self.controlled_can_just_walk:
+        elif self.game_state.controlled_can_just_walk:
             if time > settings.TIME_TO_RETREAT:
                 if self.controlled_character:
                     self.controlled_character.relinquish_control()
                 self.refresh_tick()
-                self.controlled_can_just_walk = False
-                self.waiting_for_things_to_settle = True
+                self.game_state.controlled_can_just_walk = False
+                self.game_state.waiting_for_things_to_settle = True
 
-        elif self.waiting_for_things_to_settle:
+        elif self.game_state.waiting_for_things_to_settle:
             if self.settled:
-                self.waiting_for_things_to_settle = False
-                self.between_turns = True
+                self.game_state.waiting_for_things_to_settle = False
+                self.game_state.between_turns = True
                 self.refresh_tick()
 
         # Switches to a new time if enough time has passed.
-        elif self.between_turns:
+        elif self.game_state.between_turns:
             if time > settings.TIME_TO_WAIT_FOR_TURN:
-                next_team = teams.Team.next_team(self.last_controlled.team)
-                self.last_controlled = next(next_team.character_queue)
-                self.last_controlled.take_control()
-                self.between_turns = False
-                self.controlled_can_attack = True
-                self.display.set_focus(*self.controlled_character.pos.astype(int))
-                self.refresh_tick()
+                if len(teams.Team.get_alive_teams()) > 1:
+                    next_team = teams.Team.next_team(self.last_controlled.team)
+                    self.last_controlled = next(next_team.character_queue)
+                    self.last_controlled.take_control()
+                    self.game_state.between_turns = False
+                    self.game_state.controlled_can_attack = True
+                    self.display.set_focus(*self.controlled_character.pos.astype(int))
+                    self.refresh_tick()
+
+                else:
+                    self.game_state.between_turns = False
+                    self.game_state.end_game = True
+                    self.announce_victor()
+
+    def announce_victor(self) -> None:
+        for team in self.teams:
+            if team.check_if_alive():
+                logger.logger.log(f"{team} is victorious!")
+                break
+        else:
+            logger.logger.log("Oh the humanity!")
 
     @property
     def settled(self) -> bool:
@@ -176,13 +182,11 @@ class PlayingField:
         """Acknowledges the game state change by acknowledging the
         present moment as when the game state last changed.
         """
-        self.last_general_tick = ticks.total_ticks
+        self.game_state.last_general_tick = ticks.total_ticks
 
     def process_mask(
         self,
-        mask: Callable[
-            [npt.NDArray[np.int64], npt.NDArray[np.int64], npt.NDArray[np.uint8]], None
-        ],
+        mask: Callable[[npt.NDArray[np.int64], npt.NDArray[np.int64], npt.NDArray[np.uint8]], None],
     ) -> None:
         """Takes a playing field mask and applies it to the existing
         mask.
@@ -301,9 +305,7 @@ class PlayingField:
             radius: The radius of the blast.
         """
         # Damages the terrain in a circular shape.
-        self.process_mask(
-            lambda x, y, _mask: (x - pos[0]) ** 2 + (y - pos[1]) ** 2 > radius**2
-        )
+        self.process_mask(lambda x, y, _mask: (x - pos[0]) ** 2 + (y - pos[1]) ** 2 > radius**2)
 
         # Affects nearby characters caught in the blast.
         for character in self.characters:
@@ -336,9 +338,7 @@ class PlayingField:
                     if caused_by is character:
                         logger.logger.log(f"{caused_by} has committed seppuku!")
                     elif caused_by.team == character.team:
-                        logger.logger.log(
-                            f"{caused_by} accidentally killed {character}!"
-                        )
+                        logger.logger.log(f"{caused_by} accidentally killed {character}!")
                     else:
                         logger.logger.log(f"{caused_by} killed {character}!")
 
@@ -353,6 +353,6 @@ class PlayingField:
         Returns:
             The number of seconds until the game state changes.
         """
-        ticks_passed = ticks.total_ticks - self.last_general_tick
+        ticks_passed = ticks.total_ticks - self.game_state.last_general_tick
         time_passed = ticks_passed / settings.TICKS_PER_SECOND
         return np.ceil(settings.TIME_TO_ACT - time_passed)

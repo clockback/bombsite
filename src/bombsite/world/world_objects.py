@@ -210,7 +210,7 @@ class Character(WorldObject):
             display: The display onto which the character is to be drawn.
         """
         # Draws the aim of the controlled character.
-        if not self.preparing_attack and self.pf.controlled_can_attack:
+        if not self.preparing_attack and self.pf.game_state.controlled_can_attack:
             pygame.draw.line(
                 display.screen,
                 pygame.Color("darkgreen"),
@@ -349,7 +349,7 @@ class Character(WorldObject):
 
         # Operates the AI if needed.
         if self.controlled and self.team.ai is not None:
-            self.team.ai.run_ai()
+            self.team.ai.run_ai(self)
 
         # If the character is able to stand and is walking, updates the
         # walk.
@@ -429,14 +429,22 @@ class Character(WorldObject):
 
     def walk_left(self) -> None:
         """Makes the character attempt to walk to the left."""
-        if self.is_standing and self.pf.controlled_can_attack or self.pf.controlled_can_just_walk:
+        if (
+            self.is_standing
+            and self.pf.game_state.controlled_can_attack
+            or self.pf.game_state.controlled_can_just_walk
+        ):
             if not self.pf.collision_pixel(self.x - 1, self.y - 2):
                 self.walking_l = True
                 self.walking_r = False
 
     def walk_right(self) -> None:
         """Makes the character attempt to walk to the right."""
-        if self.is_standing and self.pf.controlled_can_attack or self.pf.controlled_can_just_walk:
+        if (
+            self.is_standing
+            and self.pf.game_state.controlled_can_attack
+            or self.pf.game_state.controlled_can_just_walk
+        ):
             if not self.pf.collision_pixel(self.x + 1, self.y - 2):
                 self.walking_r = True
                 self.walking_l = False
@@ -460,7 +468,7 @@ class Character(WorldObject):
         Args:
             target_firing_strength: The targeted firing strength.
         """
-        if self.preparing_attack and self.pf.controlled_can_attack:
+        if self.preparing_attack and self.pf.game_state.controlled_can_attack:
             self.fire_strength += 0.12
 
             if target_firing_strength is not None and self.fire_strength > target_firing_strength:
@@ -474,7 +482,7 @@ class Character(WorldObject):
 
     def release_attack(self) -> None:
         """Deploys a projectile from the character's position."""
-        if self.preparing_attack and self.pf.controlled_can_attack:
+        if self.preparing_attack and self.pf.game_state.controlled_can_attack:
             self.preparing_attack = False
 
             projectile_vel = self.angle_array() * self.fire_strength
@@ -492,8 +500,8 @@ class Character(WorldObject):
                 )
             )
 
-            self.pf.controlled_can_attack = False
-            self.pf.controlled_can_just_walk = True
+            self.pf.game_state.controlled_can_attack = False
+            self.pf.game_state.controlled_can_just_walk = True
             self.pf.refresh_tick()
 
     def aim_upwards(self, cap: float = settings.MAXIMUM_FIRING_ANGLE) -> None:

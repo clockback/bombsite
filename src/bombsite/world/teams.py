@@ -86,9 +86,7 @@ class Computer:
                         controlled,
                     )
                     damage, distance = projectile.phantom(self.targeting_character)
-                    if damage > best_damage or (
-                        damage == best_damage and distance < best_distance
-                    ):
+                    if damage > best_damage or (damage == best_damage and distance < best_distance):
                         should_face_l = facing_l
                         best_damage = damage
                         best_distance = distance
@@ -97,9 +95,9 @@ class Computer:
 
         return should_face_l, best_angle, best_strength
 
-    def run_ai(self) -> None:
+    def run_ai(self, controlled: world_objects.Character) -> None:
         """Operates the AI for the team."""
-        if not self.team.pf.controlled_can_attack:
+        if not self.team.pf.game_state.controlled_can_attack:
             return
 
         if self.targeting_character is None:
@@ -112,11 +110,7 @@ class Computer:
             self.time_to_act = True
 
         if self.time_to_act and self.firing_angle is None:
-            self.is_firing_left, self.firing_angle, self.firing_strength = (
-                self.scan_attacks()
-            )
-
-        controlled = self.team.pf.controlled_character
+            self.is_firing_left, self.firing_angle, self.firing_strength = self.scan_attacks()
 
         if controlled.facing_l != self.is_firing_left:
             controlled.facing_l = self.is_firing_left
@@ -158,10 +152,12 @@ class Team:
         self.team_number: int = len(Team.teams) + 1
         self.characters: list[world_objects.Character] = []
         self.teams.append(self)
-        self.character_queue: Generator[world_objects.Character, None, None] = (
-            self.next_character()
-        )
+        self.character_queue: Generator[world_objects.Character, None, None] = self.next_character()
         self.ai: Optional[Computer] = self.get_ai(has_ai)
+
+    def __str__(self) -> str:
+        """Returns the team name based on the team number."""
+        return f"Team {self.team_number}"
 
     def get_ai(self, has_ai: bool) -> Optional[Computer]:
         """Obtains an AI computer player.
@@ -185,6 +181,10 @@ class Team:
         return False
 
     @classmethod
+    def get_alive_teams(cls) -> list[Team]:
+        return list(filter(Team.check_if_alive, cls.teams))
+
+    @classmethod
     def next_team(cls, last_team: Optional[Team] = None) -> Team:
         """Finds the next team to play. If no previous team is provided,
         simply returns the first team.
@@ -195,7 +195,7 @@ class Team:
         Returns:
             The next team available to play.
         """
-        live_teams = [team for team in cls.teams if team.check_if_alive()]
+        live_teams = cls.get_alive_teams()
 
         if last_team is None or len(live_teams) == 1:
             return live_teams[0]
@@ -203,6 +203,8 @@ class Team:
         for team, team_after in zip(live_teams, live_teams[1:] + [live_teams[0]]):
             if team is last_team:
                 return team_after
+
+        raise ValueError(f"Scanned teams {list(live_teams)} and didn't find {last_team}")
 
     def next_character(self) -> Generator[world_objects.Character, None, None]:
         """Continuously cycles over the living characters.
