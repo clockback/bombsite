@@ -1,3 +1,8 @@
+"""teams.py provides AI for computer-controlled teams and functionality regarding all teams.
+
+Copyright © 2024 - Elliot Simpson
+"""
+
 from __future__ import annotations
 
 from typing import Generator, Optional
@@ -16,7 +21,13 @@ colours: list[pygame.Color] = [
 
 
 class Computer:
-    """A computer AI which can issue commands to the characters."""
+    """A computer AI which can issue commands to the characters.
+
+    Attributes:
+        team: The team the AI applies to.
+        targeting_character: The character that the AI has most recently decided to attack.
+        time_to_act:
+    """
 
     def __init__(self, team: Team) -> None:
         """Creates the computer according to the provided parameters.
@@ -96,7 +107,11 @@ class Computer:
         return should_face_l, best_angle, best_strength
 
     def run_ai(self, controlled: world_objects.Character) -> None:
-        """Operates the AI for the team."""
+        """Operates the AI for the team.
+
+        Args:
+            controlled: The character which the team's AI is presently controlling.
+        """
         if not self.team.pf.game_state.controlled_can_attack:
             return
 
@@ -137,9 +152,19 @@ class Computer:
 
 
 class Team:
-    """A team of characters."""
+    """A team of allied characters.
+
+    Attributes:
+        pf: The playing field in which the team fights.
+        team_number: An integer unique to the team amongst all teams on the playing field.
+        characters: A list of all characters in the team.
+        character_queue: A generator which continually provides the next character to be controlled
+            from the team.
+        ai: The AI acting on the team, if there is one, otherwise None.
+    """
 
     teams: list[Team] = []
+    """A complete list of all teams."""
 
     def __init__(self, pf: playing_field.PlayingField, has_ai: bool = False) -> None:
         """Creates the team according to the provided parameters.
@@ -156,7 +181,11 @@ class Team:
         self.ai: Optional[Computer] = self.get_ai(has_ai)
 
     def __str__(self) -> str:
-        """Returns the team name based on the team number."""
+        """Returns the team name based on the team number.
+
+        Returns:
+            "Team {number}".
+        """
         return f"Team {self.team_number}"
 
     def get_ai(self, has_ai: bool) -> Optional[Computer]:
@@ -164,6 +193,9 @@ class Team:
 
         Args:
             has_ai: Whether or not the team is controlled by an AI.
+
+        Returns:
+            The AI for the team if computer-controlled, otherwise None.
         """
         return Computer(self) if has_ai else None
 
@@ -171,8 +203,7 @@ class Team:
         """Checks if there are any living characters on the team.
 
         Returns:
-            Returns a boolean for whether there is at least one living
-            character.
+            Returns a boolean for whether there is at least one living character.
         """
         for character in self.characters:
             if character.alive:
@@ -182,18 +213,25 @@ class Team:
 
     @classmethod
     def get_alive_teams(cls) -> list[Team]:
+        """Returns a list of all the teams still alive.
+
+        Returns:
+            A list containing each team in the order they were added, filtering out dead teams.
+        """
         return list(filter(Team.check_if_alive, cls.teams))
 
     @classmethod
     def next_team(cls, last_team: Optional[Team] = None) -> Team:
-        """Finds the next team to play. If no previous team is provided,
-        simply returns the first team.
+        """Finds the next team to play. If no previous team is provided, returns the first team.
 
         Args:
-            last_team: The last team to have played.
+            last_team: The last team to have played, if one has played, otherwise None.
 
         Returns:
             The next team available to play.
+
+        Raises:
+            ValueError: The next team cannot be found using the last team as a reference.
         """
         live_teams = cls.get_alive_teams()
 

@@ -1,3 +1,8 @@
+"""world_objects.py is the module providing the objects that appear on the playing field.
+
+Copyright © 2024 - Elliot Simpson
+"""
+
 from __future__ import annotations
 
 import abc
@@ -53,43 +58,87 @@ class WorldObject(abc.ABC):
 
     @property
     def x(self) -> float:
+        """The getter for the x-component of the object's position.
+
+        Returns:
+            The world object's floating-point-value x-position.
+        """
         return float(self.pos[0])
 
     @property
     def y(self) -> float:
+        """The getter for the y-component of the object's position.
+
+        Returns:
+            The world object's floating-point-value y-position.
+        """
         return float(self.pos[1])
 
     @x.setter
     def x(self, value: float) -> None:
+        """The setter for the x-component of the object's position.
+
+        Args:
+            value: The new world object's x-position.
+        """
         self.pos[0] = value
 
     @y.setter
     def y(self, value: float) -> None:
+        """The setter for the y-component of the object's position.
+
+        Args:
+            value: The new world object's x-position.
+        """
         self.pos[1] = value
 
     @property
     def vx(self) -> float:
+        """The getter for the x-component of the object's velocity.
+
+        Returns:
+            The world object's floating-point-value x-velocity.
+        """
         return float(self.vel[0])
 
     @property
     def vy(self) -> float:
+        """The getter for the y-component of the object's velocity.
+
+        Returns:
+            The world object's floating-point-value y-velocity.
+        """
         return float(self.vel[1])
 
     @vx.setter
     def vx(self, value: float) -> None:
+        """The setter for the x-component of the object's velocity.
+
+        Args:
+            value: The new world object's x-velocity.
+        """
         self.vel[0] = value
 
     @vy.setter
     def vy(self, value: float) -> None:
+        """The setter for the y-component of the object's velocity.
+
+        Args:
+            value: The new world object's y-velocity.
+        """
         self.vel[1] = value
 
     @abc.abstractmethod
     def update(self) -> None:
-        pass
+        """The abstract method that is run every tick for the world object."""
 
     @abc.abstractmethod
     def visible(self) -> bool:
-        pass
+        """The abstract method that returns whether or not the object should be displayed.
+
+        Returns:
+            True if the renderer should display the object on the screen, otherwise False.
+        """
 
     def apply_gravity(self) -> None:
         """Accelerates the object downwards."""
@@ -103,6 +152,7 @@ class Character(WorldObject):
         Path(__file__).parent.parent / "fonts" / "playpen_sans" / "PlaypenSans-Regular.ttf",
         10,
     )
+    """The font used to render the names of the characters."""
 
     def __init__(
         self,
@@ -119,8 +169,7 @@ class Character(WorldObject):
             x: The x-position of the character.
             y: The y-position of the character.
             name: The name of the character.
-            team: The number team (starting from 1) in which the
-                character is placed.
+            team: The number team (starting from 1) in which the character is placed.
         """
         super().__init__(pf, x, y, 0, 0)
         self.name: str = name
@@ -152,8 +201,7 @@ class Character(WorldObject):
         """Whether or not the character is standing on ground.
 
         Returns:
-            Boolean for whether or not the character is standing on
-            ground.
+            Boolean for whether or not the character is standing on ground.
         """
         if self.vy == 0.0:
             if self.pf.collision_pixel(self.x, self.y + 1):
@@ -164,16 +212,32 @@ class Character(WorldObject):
 
     @property
     def moving_left(self) -> bool:
-        """Whether or not the character is moving left."""
+        """Whether or not the character is moving left.
+
+        Returns:
+            True if the character is either moving to the left, or is being commanded to walk to the
+            left.
+        """
         return self.vx < 0 or self.walking_l
 
     @property
     def moving_right(self) -> bool:
-        """Whether or not the character is moving left."""
+        """Whether or not the character is moving right.
+
+        Returns:
+            True if the character is either moving to the right, or is being commanded to walk to
+            the right.
+        """
         return self.vx > 0 or self.walking_r
 
     @property
     def health_colour(self) -> pygame.Color:
+        """Returns the colour used in the character's health bar given their quantity of health.
+
+        Returns:
+            A green hue for a healthy character, red for an severely wounded character, or a colour
+            in between.
+        """
         if self.health < settings.MAX_HEALTH // 2:
             return pygame.Color(255, int(255 * self.health * 2 / settings.MAX_HEALTH), 0)
 
@@ -254,10 +318,8 @@ class Character(WorldObject):
         """Writes the character's name onto the playing field.
 
         Args:
-            display: The display onto which the character's name is to be
-                drawn.
-            draw_pos: The position of the character relative to the
-                screen.
+            display: The display onto which the character's name is to be drawn.
+            draw_pos: The position of the character relative to the screen.
         """
         text_surface = self.font.render(self.name, 1, teams.colours[self.team.team_number - 1])
         draw_x, draw_y = draw_pos
@@ -340,8 +402,8 @@ class Character(WorldObject):
         """Updates the character's attributes.
 
         Raises:
-            ValueError: If after 100 iterations of collision detection
-                a new position has not been found, the game crashes.
+            ValueError: If after 100 iterations of collision detection a new position has not been
+                found, the game crashes.
         """
         # Doesn't update the position.
         if not self.alive:
@@ -466,7 +528,8 @@ class Character(WorldObject):
         occurring and releases the attack if it has gone on too long.
 
         Args:
-            target_firing_strength: The targeted firing strength.
+            target_firing_strength: The targeted firing strength if controlled by an AI, otherwise
+                None.
         """
         if self.preparing_attack and self.pf.game_state.controlled_can_attack:
             self.fire_strength += 0.12
@@ -527,14 +590,13 @@ class Character(WorldObject):
         direction.
 
         Args:
-            angle: The angle at which the firing angle is being
-                calculated. Uses the character's firing angle if none
-                given.
-            facing_l: The direction the character is facing.
+            angle: The angle at which the firing angle is being calculated. Uses the character's
+                firing angle if none given.
+            facing_l: The direction the character is facing. True if the character is facing left,
+                otherwise False.
 
         Returns:
-            An array with the horizontal and vertical components of the
-            firing direction.
+            An array with the horizontal and vertical components of the firing direction.
         """
         angle_radians = np.radians(angle if angle else self.firing_angle)
         facing_l = facing_l if facing_l is not None else self.facing_l
@@ -544,8 +606,7 @@ class Character(WorldObject):
         """Reacts to the users commands from held keys.
 
         Args:
-            pressed_keys: A mapping from the keys to whether or not they
-                are pressed.
+            pressed_keys: A mapping from the keys to whether or not they are pressed.
         """
         if pressed_keys[pygame.K_LEFT]:
             self.walk_left()
@@ -572,9 +633,7 @@ class Character(WorldObject):
             self.aim_downwards()
 
     def check_outside_boundaries(self) -> None:
-        """Checks if the character has fallen outside the map
-        boundaries.
-        """
+        """Checks if the character has fallen outside the map boundaries."""
         if not self.alive:
             return
 
@@ -586,8 +645,7 @@ class Character(WorldObject):
             self.vel = np.array((0.0, 0.0))
 
     def surrounding_is(self, match: npt.NDArray[np.int_]) -> bool:
-        """Checks if the mask around the character matches the template
-        given.
+        """Checks if the mask around the character matches the template given.
 
         Args:
             match: A 3x3 array, centered on the character's position,
@@ -722,7 +780,14 @@ class Projectile(WorldObject):
         self.pf.world_objects.remove(self)
 
     def phantom(self, target: Character) -> tuple[int, int]:
-        """Estimates the expected result of the projectile."""
+        """Estimates the expected result of the projectile.
+
+        Args:
+            target: The character that the phantom projectile is attempting to reach.
+
+        Returns: A tuple containing the expected damage from the attack, and the distance from the
+            targeted character.
+        """
         net_damage = 0
 
         while True:

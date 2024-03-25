@@ -1,3 +1,8 @@
+"""display.py keeps functionality for rendering the game.
+
+Copyright © 2024 - Elliot Simpson
+"""
+
 from typing import Optional
 
 import numpy as np
@@ -9,6 +14,17 @@ from bombsite.world import playing_field
 
 
 class Display:
+    """The display along with its camera.
+
+    Attributes:
+        screen: The Pygame screen onto which the game is drawn.
+        x: The x-position of the camera.
+        vx: The x-velocity of the camera.
+        y: The y-position of the camera.
+        vy: The y-velocity of the camera.
+        focus: The destination of the camera, towards which it pans, if there is one, else None.
+    """
+
     def __init__(self) -> None:
         """Creates the Pygame display."""
         self.screen: pygame.Surface = self.get_screen()
@@ -43,8 +59,7 @@ class Display:
         self.focus = np.array((x, y))
 
     def update_display(self, pf: playing_field.PlayingField) -> None:
-        """Fills in the background, draws the map image, and updates the
-        display.
+        """Fills in the background, draws the map image, and updates the display.
 
         Args:
             pf: The playing field the display shows.
@@ -68,15 +83,13 @@ class Display:
         pygame.display.flip()
 
     def get_top_left_focus_coords(self, pf: playing_field.PlayingField) -> tuple[float, float]:
-        """Finds the coordinates of the desired top-left corner of the
-        camera once it has centred the focus.
+        """Finds the camera coordinates of the desired top-left corner once centred on the focus.
 
         Args:
             pf: The playing field on which the display applies.
 
         Returns:
-            The x-coordinate and the y-coordinate of the top-left corner
-            of the expected screen.
+            The x-coordinate and the y-coordinate of the top-left corner of the expected screen.
         """
         top_left_x = self.focus[0] - settings.SCREEN_WIDTH // 2
         top_left_y = self.focus[1] - settings.SCREEN_HEIGHT // 2

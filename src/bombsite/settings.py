@@ -1,3 +1,8 @@
+"""settings.py is the module which contains all constants/magic numbers that configure the game.
+
+Copyright © 2024 - Elliot Simpson
+"""
+
 # SCREEN_WIDTH: int = 1920
 # SCREEN_HEIGHT: int = 1080
 SCREEN_WIDTH: int = 1200

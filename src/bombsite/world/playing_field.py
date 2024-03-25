@@ -1,3 +1,8 @@
+"""playing_field.py keeps track of all things within a single match.
+
+Copyright © 2024 - Elliot Simpson
+"""
+
 from __future__ import annotations
 
 from pathlib import Path
@@ -13,14 +18,27 @@ from bombsite.world import gamestate, teams, world_objects
 
 
 class PlayingField:
-    """The area where the characters run."""
+    """The area where the characters run.
+
+    Attributes:
+        image: The base image of the solid ground for the playing field.
+        mask: An array the size of the playing field which indicates whether or not there is solid
+            ground at a corresponding coordinate.
+        teams: A list of teams that are fighting one another on the playing field.
+        last_controlled: Whichever character is either being controlled presently or was most
+            recently controlled on the playing field.
+        world_objects: A list of all physical world objects on the playing field, such as characters
+            and projectiles.
+        game_state: A data structure from which the present game state can be inferred, such as
+            whether or not a character may or may not move.
+        display: The display onto which the playing field is being rendered.
+    """
 
     def __init__(self, name: str, display: bombsite.display.Display) -> None:
         """Creates the playing field.
 
         Args:
-            name: The name of the playing field which corresponds with
-                its image.
+            name: The name of the playing field which corresponds with its image.
             display: The display which shows the playing field.
         """
         # Obtains and loads the image for the playing field.
@@ -156,6 +174,7 @@ class PlayingField:
                     self.announce_victor()
 
     def announce_victor(self) -> None:
+        """Creates a log message indicating the outcome of the match."""
         for team in self.teams:
             if team.check_if_alive():
                 logger.logger.log(f"{team} is victorious!")
@@ -165,12 +184,11 @@ class PlayingField:
 
     @property
     def settled(self) -> bool:
-        """Determines whether or not things are actively happening on
-        the field.
+        """Determines whether or not things are actively happening on the field.
 
         Returns:
-            Boolean for whether or not anything is happening, such as a
-            character or projectile moving.
+            Boolean for whether or not anything is happening, such as a character or projectile
+            moving.
         """
         for wo in self.world_objects:
             if np.any(wo.vel):
@@ -179,21 +197,20 @@ class PlayingField:
         return True
 
     def refresh_tick(self) -> None:
-        """Acknowledges the game state change by acknowledging the
-        present moment as when the game state last changed.
-        """
+        """Acknowledges when the last change in state occurred."""
         self.game_state.last_general_tick = ticks.total_ticks
 
     def process_mask(
         self,
-        mask: Callable[[npt.NDArray[np.int64], npt.NDArray[np.int64], npt.NDArray[np.uint8]], None],
+        overlay: Callable[
+            [npt.NDArray[np.int64], npt.NDArray[np.int64], npt.NDArray[np.uint8]], None
+        ],
     ) -> None:
-        """Takes a playing field mask and applies it to the existing
-        mask.
+        """Takes a playing field mask and applies it to the existing mask.
 
         Args:
-            mask: A function which takes the x index, the y index, and
-                the existing mask values to create a new mask.
+            overlay: A function which takes the x index, the y index, and the existing mask values
+                to create a new mask.
         """
         # Obtains the size of the image.
         width = self.image.get_width()
@@ -204,7 +221,7 @@ class PlayingField:
         y = np.row_stack([np.arange(height)] * width)
 
         # Applies the mask.
-        self.mask = self.mask & mask(x, y, self.mask)
+        self.mask = self.mask & overlay(x, y, self.mask)
 
         # Obtains the mutable array for the present alpha of the image
         # and overwrites the old alpha channel.
@@ -238,8 +255,7 @@ class PlayingField:
         """Returns whichever character is being controlled by the user.
 
         Returns:
-            The currently selected character or None if no character is
-            selected.
+            The currently selected character or None if no character is selected.
         """
         # Iterates over all objects in the world which are the user.
         for character in self.characters:
@@ -266,16 +282,14 @@ class PlayingField:
         """Handles all keys that are currently pressed.
 
         Args:
-            pressed_keys: The mapping with key bindings to whether or
-                not they are being pressed.
+            pressed_keys: The mapping with key bindings to whether or not they are being pressed.
         """
         character = self.controlled_character
         if character and character.team.ai is None:
             character.process_key_presses(pressed_keys)
 
     def collision_pixel(self, x: float, y: float) -> bool:
-        """Determines if a pixel location on the playing field is
-        solid or not.
+        """Determines if a pixel location on the playing field is solid or not.
 
         Args:
             x: The x-location of the pixel.
@@ -296,8 +310,7 @@ class PlayingField:
         caused_by: world_objects.Character,
         radius: int = 40,
     ) -> None:
-        """Causes an explosion to damage the nearby terrain and
-        characters.
+        """Causes an explosion to damage the nearby terrain and characters.
 
         Args:
             pos: The source location of the explosion.
@@ -347,8 +360,7 @@ class PlayingField:
                     character.vel += (blast_direction * (radius - distance)) * 0.1
 
     def time_left_on_clock(self) -> float:
-        """Determines how much time is left on the clock to perform an
-        action.
+        """Determines how much time is left on the clock to perform an action.
 
         Returns:
             The number of seconds until the game state changes.
