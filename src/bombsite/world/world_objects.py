@@ -65,15 +65,6 @@ class WorldObject(abc.ABC):
         """
         return float(self.pos[0])
 
-    @property
-    def y(self) -> float:
-        """The getter for the y-component of the object's position.
-
-        Returns:
-            The world object's floating-point-value y-position.
-        """
-        return float(self.pos[1])
-
     @x.setter
     def x(self, value: float) -> None:
         """The setter for the x-component of the object's position.
@@ -82,6 +73,15 @@ class WorldObject(abc.ABC):
             value: The new world object's x-position.
         """
         self.pos[0] = value
+
+    @property
+    def y(self) -> float:
+        """The getter for the y-component of the object's position.
+
+        Returns:
+            The world object's floating-point-value y-position.
+        """
+        return float(self.pos[1])
 
     @y.setter
     def y(self, value: float) -> None:
@@ -101,15 +101,6 @@ class WorldObject(abc.ABC):
         """
         return float(self.vel[0])
 
-    @property
-    def vy(self) -> float:
-        """The getter for the y-component of the object's velocity.
-
-        Returns:
-            The world object's floating-point-value y-velocity.
-        """
-        return float(self.vel[1])
-
     @vx.setter
     def vx(self, value: float) -> None:
         """The setter for the x-component of the object's velocity.
@@ -118,6 +109,15 @@ class WorldObject(abc.ABC):
             value: The new world object's x-velocity.
         """
         self.vel[0] = value
+
+    @property
+    def vy(self) -> float:
+        """The getter for the y-component of the object's velocity.
+
+        Returns:
+            The world object's floating-point-value y-velocity.
+        """
+        return float(self.vel[1])
 
     @vy.setter
     def vy(self, value: float) -> None:
