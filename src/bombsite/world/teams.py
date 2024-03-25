@@ -233,7 +233,7 @@ class Team:
         Raises:
             ValueError: The next team cannot be found using the last team as a reference.
         """
-        live_teams = cls.get_alive_teams()
+        live_teams = [team for team in cls.teams if team.check_if_alive() or team is last_team]
 
         if last_team is None or len(live_teams) == 1:
             return live_teams[0]
