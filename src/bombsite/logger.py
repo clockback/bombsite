@@ -1,3 +1,8 @@
+"""logger.py provides functionality to communicate to the players.
+
+Copyright © 2024 - Elliot Simpson
+"""
+
 from dataclasses import dataclass
 from typing import Optional
 
@@ -11,12 +16,22 @@ pygame.font.init()
 
 @dataclass
 class LogMessage:
+    """A single log message and the corresponding drawn text."""
+
     text: str
+    """The original string to be logged."""
+
     image: Optional[pygame.Surface]
+    """The rendering of the log message. If the message has expired, the image is discarded."""
 
 
 class Logger:
-    """A record of all logged messages to the users."""
+    """A record of all logged messages to the users.
+
+    Attributes:
+        messages: A list of all messages that have entered the log.
+        font: The font used for rendering the log messages.
+    """
 
     def __init__(self) -> None:
         """Creates the logger."""

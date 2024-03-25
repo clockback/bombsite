@@ -1,6 +1,9 @@
 #!/usr/bin/env python
 
-"""A Worms clone."""
+"""bombsite.py is the entry point for the Bombsite game.
+
+Copyright © 2024 - Elliot Simpson
+"""
 
 from __future__ import annotations
 
@@ -53,6 +56,11 @@ def mainloop() -> bool:
 
 
 def main() -> Literal[0]:
+    """Runs the game's mainloop.
+
+    Returns:
+        A return code of zero to indicate success.
+    """
     game_exit = False
     while not game_exit:
         game_exit = mainloop()

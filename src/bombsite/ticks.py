@@ -1,3 +1,8 @@
+"""ticks.py is a module with global variables for the present game state.
+
+Copyright © 2024 - Elliot Simpson
+"""
+
 from pathlib import Path
 
 import pygame
