@@ -14,11 +14,39 @@ import pygame
 import bombsite.display
 from bombsite import settings, ticks
 from bombsite.world import playing_field
+from bombsite.world.teams import Team
 
 pygame.init()
 
 display: bombsite.display.Display = bombsite.display.Display()
-pf: playing_field.PlayingField = playing_field.PlayingField("hills", display)
+pf: playing_field.PlayingField = playing_field.PlayingField("hills")
+
+
+def test_bombsite() -> None:
+    """Ensures that the playing field has teams/characters."""
+    # Creates the three teams.
+    team_1 = Team(pf)
+    team_2 = Team(pf, has_ai=True)
+    team_3 = Team(pf, has_ai=True)
+
+    # Creates the list of teams.
+    pf.teams.extend([team_1, team_2, team_3])
+
+    # Creates a list of characters.
+    characters = [
+        team_1.add_character(100, 500, "Joey"),
+        team_2.add_character(200, 500, "Ronald"),
+        team_3.add_character(300, 500, "Ricky"),
+        team_1.add_character(400, 500, "John"),
+        team_2.add_character(500, 500, "Tamara"),
+        team_3.add_character(600, 500, "Anne"),
+        team_1.add_character(700, 500, "Samantha"),
+        team_2.add_character(800, 500, "Felicity"),
+        team_3.add_character(900, 500, "Alex"),
+    ]
+
+    pf.world_objects = characters
+    next(pf.next_team().character_queue).take_control()
 
 
 def mainloop() -> bool:
@@ -40,15 +68,15 @@ def mainloop() -> bool:
 
         elif event.type == pygame.KEYDOWN and event.key == pygame.K_RETURN:
             character = pf.controlled_character
-            if character and pf.controlled_character.team.ai is None:
+            if character.details.team.ai is None:
                 character.start_attack()
 
     # Finds all the keys that are pressed and processes them.
     pf.process_key_presses(pygame.key.get_pressed())
 
-    pf.update()
+    focus = pf.update()
 
-    display.update(pf)
+    display.update(pf, focus)
 
     ticks.clock.tick(settings.TICKS_PER_SECOND)
 
@@ -61,6 +89,9 @@ def main() -> Literal[0]:
     Returns:
         A return code of zero to indicate success.
     """
+    test_bombsite()
+    display.set_focus(*pf.controlled_character.kinematics.pos.astype(int))
+
     game_exit = False
     while not game_exit:
         game_exit = mainloop()

@@ -15,4 +15,4 @@ jobs:
           python -m pip install -r requirements-dev.txt -e .
       - name: Run Pylint
         run: |
-          python -m pylint src/
+          python -m pylint --rcfile=.settings/pylintrc src/

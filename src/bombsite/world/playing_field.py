@@ -6,15 +6,26 @@ Copyright © 2024 - Elliot Simpson
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Callable, Generator, Optional
+from typing import TYPE_CHECKING, Callable, Generator, Optional, Type, TypeVar
 
 import numpy as np
 import numpy.typing as npt
 import pygame
 
-import bombsite.display
 from bombsite import logger, settings, ticks
-from bombsite.world import gamestate, teams, world_objects
+from bombsite.world import gamestate, world_objects
+from bombsite.world.characters import characters
+
+if TYPE_CHECKING:
+    import bombsite.display
+    from bombsite.world import teams
+
+
+WO = TypeVar("WO", bound=world_objects.WorldObject)
+
+
+class UndefinedPropertyError(AttributeError):
+    """Property cannot return value because set up of object has not been finished."""
 
 
 class PlayingField:
@@ -25,21 +36,19 @@ class PlayingField:
         mask: An array the size of the playing field which indicates whether or not there is solid
             ground at a corresponding coordinate.
         teams: A list of teams that are fighting one another on the playing field.
-        last_controlled: Whichever character is either being controlled presently or was most
+        _last_controlled: Whichever character is either being controlled presently or was most
             recently controlled on the playing field.
         world_objects: A list of all physical world objects on the playing field, such as characters
             and projectiles.
         game_state: A data structure from which the present game state can be inferred, such as
             whether or not a character may or may not move.
-        display: The display onto which the playing field is being rendered.
     """
 
-    def __init__(self, name: str, display: bombsite.display.Display) -> None:
+    def __init__(self, name: str) -> None:
         """Creates the playing field.
 
         Args:
             name: The name of the playing field which corresponds with its image.
-            display: The display which shows the playing field.
         """
         # Obtains and loads the image for the playing field.
         path_to_image = Path(__file__).parent.parent / "images" / "playing_fields" / f"{name}.png"
@@ -52,42 +61,74 @@ class PlayingField:
         # semi-transparent pixels.
         self.process_mask(lambda _x, _y, mask: mask == 255)
 
-        # Creates the two teams.
-        team_1 = teams.Team(self)
-        team_2 = teams.Team(self, has_ai=True)
-        team_3 = teams.Team(self, has_ai=True)
-
         # Creates the list of teams.
-        self.teams: list[teams.Team] = [team_1, team_2]
-
-        # Creates a list of characters.
-        characters = [
-            team_1.add_character(100, 500, "Joey"),
-            team_2.add_character(200, 500, "Ronald"),
-            team_3.add_character(300, 500, "Ricky"),
-            team_1.add_character(400, 500, "John"),
-            team_2.add_character(500, 500, "Tamara"),
-            team_3.add_character(600, 500, "Anne"),
-            team_1.add_character(700, 500, "Samantha"),
-            team_2.add_character(800, 500, "Felicity"),
-            team_3.add_character(900, 500, "Alex"),
-        ]
+        self.teams: list[teams.Team] = []
 
         # Gives control of the first-created character to the user.
-        current_team = teams.Team.next_team()
-        self.last_controlled: world_objects.Character = next(
-            current_team.character_queue
-        ).take_control()
+        self._last_controlled: characters.Character | None = None
 
         # Creates the world objects.
-        self.world_objects: list[world_objects.WorldObject] = characters.copy()
+        self.world_objects: list[world_objects.WorldObject] = []
 
         # Sets variables that determine the state of the game.
         self.game_state: gamestate.GameState = gamestate.GameState()
 
-        # Stores the display.
-        self.display: bombsite.display.Display = display
-        self.display.set_focus(*self.controlled_character.pos.astype(int))
+    @property
+    def last_controlled(self) -> characters.Character:
+        """Returns the last controlled character.
+
+        Returns:
+            The character which was controlled most recently.
+
+        Raises:
+            AttributeError: There is no character to have been controlled yet.
+        """
+        if self._last_controlled is None:
+            raise UndefinedPropertyError("No characters have been loaded.")
+
+        return self._last_controlled
+
+    @last_controlled.setter
+    def last_controlled(self, character: characters.Character) -> None:
+        """Sets the last controlled character.
+
+        Args:
+            character: The character which was controlled most recently.
+        """
+        self._last_controlled = character
+
+    def next_team(self, last_team: Optional[teams.Team] = None) -> teams.Team:
+        """Finds the next team to play. If no previous team is provided, returns the first team.
+
+        Args:
+            last_team: The last team to have played, if one has played, otherwise None.
+
+        Returns:
+            The next team available to play.
+
+        Raises:
+            ValueError: The next team cannot be found using the last team as a reference.
+        """
+        live_teams = [team for team in self.teams if team.check_if_alive() or team is last_team]
+
+        if last_team is None or len(live_teams) == 1:
+            return live_teams[0]
+
+        for team, team_after in zip(live_teams, live_teams[1:] + [live_teams[0]]):
+            if team is last_team:
+                return team_after
+
+        raise ValueError(f"Scanned teams {list(live_teams)} and didn't find {last_team}")
+
+    def alive_characters(self) -> Generator[characters.Character, None, None]:
+        """Iterates over all characters on the playing field that are alive.
+
+        Yields:
+            Each character on the playing field that have a positive quantity of health.
+        """
+        for character in self.characters:
+            if character.health.alive:
+                yield character
 
     def get_centre(self) -> Optional[npt.NDArray[np.int_]]:
         """Finds the centre point of all moving objects on screen.
@@ -99,35 +140,34 @@ class PlayingField:
         ys = []
 
         for wo in self.world_objects:
-            if np.any(wo.vel):
-                xs.append(wo.x)
-                ys.append(wo.y)
+            if np.any(wo.kinematics.vel):
+                xs.append(wo.kinematics.x)
+                ys.append(wo.kinematics.y)
 
         if xs:
             return np.array((np.average(xs), np.average(ys)))
 
         return None
 
-    def update(self) -> bool:
+    def update(self) -> tuple[int, int] | None:
         """Updates the state of all objects in the playing field.
 
         Returns:
-            Whether or not the program should abort.
+            Where the camera should be focused if there is a new focus, otherwise None.
         """
-        self.process_tick()
+        focus = self.process_tick()
 
         for wo in self.world_objects:
             wo.update()
 
-        # Pans to the centre of the projectile.
-        display_focus = self.get_centre()
-        if display_focus is not None:
-            self.display.set_focus(*display_focus)
+        return focus
 
-        return False
+    def process_tick(self) -> tuple[int, int] | None:
+        """Assesses if the game state should change.
 
-    def process_tick(self) -> None:
-        """Assesses if the game state should change."""
+        Returns:
+            Where the camera should be focused if there is a new focus, otherwise None.
+        """
         # Calculates the time in seconds since the game state changed.
         no_ticks = ticks.total_ticks - self.game_state.last_general_tick
         time = no_ticks / settings.TICKS_PER_SECOND
@@ -144,8 +184,7 @@ class PlayingField:
         # passed.
         elif self.game_state.controlled_can_just_walk:
             if time > settings.TIME_TO_RETREAT:
-                if self.controlled_character:
-                    self.controlled_character.relinquish_control()
+                self.controlled_character.relinquish_control()
                 self.refresh_tick()
                 self.game_state.controlled_can_just_walk = False
                 self.game_state.waiting_for_things_to_settle = True
@@ -159,19 +198,21 @@ class PlayingField:
         # Switches to a new time if enough time has passed.
         elif self.game_state.between_turns:
             if time > settings.TIME_TO_WAIT_FOR_TURN:
-                if len(teams.Team.get_alive_teams()) > 1:
-                    next_team = teams.Team.next_team(self.last_controlled.team)
+                if self.number_of_alive_teams() > 1:
+                    next_team = self.next_team(self.last_controlled.details.team)
                     self.last_controlled = next(next_team.character_queue)
                     self.last_controlled.take_control()
                     self.game_state.between_turns = False
                     self.game_state.controlled_can_attack = True
-                    self.display.set_focus(*self.controlled_character.pos.astype(int))
                     self.refresh_tick()
+                    return self.last_controlled.kinematics.intpos
 
                 else:
                     self.game_state.between_turns = False
                     self.game_state.end_game = True
                     self.announce_victor()
+
+        return None
 
     def announce_victor(self) -> None:
         """Creates a log message indicating the outcome of the match."""
@@ -191,10 +232,18 @@ class PlayingField:
             moving.
         """
         for wo in self.world_objects:
-            if np.any(wo.vel):
+            if np.any(wo.kinematics.vel):
                 return False
 
         return True
+
+    def number_of_alive_teams(self) -> int:
+        """Returns the number of all the teams still alive.
+
+        Returns:
+            The number of all teams filtering out dead teams.
+        """
+        return len({team for team in self.teams if team.check_if_alive()})
 
     def refresh_tick(self) -> None:
         """Acknowledges when the last change in state occurred."""
@@ -228,44 +277,66 @@ class PlayingField:
         surface_alpha = np.array(self.image.get_view("A"), copy=False)
         surface_alpha[:, :] = self.mask * 255
 
+    def get_world_objects(self, world_object_type: Type[WO]) -> Generator[WO, None, None]:
+        """Finds all world objects of the corresponding type.
+
+        Args:
+            world_object_type: The type of world object to be yielded.
+
+        Yields:
+            Every world object instance in the playing field of the corresponding type.
+        """
+        for world_object in self.world_objects:
+            if isinstance(world_object, world_object_type):
+                yield world_object
+
     @property
-    def characters(self) -> Generator[world_objects.Character, None, None]:
+    def characters(self) -> Generator[characters.Character, None, None]:
         """Yields each world object that is a character.
 
         Yields:
             Each character in the world.
         """
         for world_object in self.world_objects:
-            if isinstance(world_object, world_objects.Character):
+            if isinstance(world_object, characters.Character):
                 yield world_object
 
     @property
-    def projectiles(self) -> Generator[world_objects.Projectile, None, None]:
-        """Yields each world object that is a projectile.
-
-        Yields:
-            Each projectile in the world.
-        """
-        for world_object in self.world_objects:
-            if isinstance(world_object, world_objects.Projectile):
-                yield world_object
-
-    @property
-    def controlled_character(self) -> Optional[world_objects.Character]:
+    def controlled_character_or_none(self) -> characters.Character | None:
         """Returns whichever character is being controlled by the user.
 
         Returns:
             The currently selected character or None if no character is selected.
+
+        Raises:
+            AttributeError: No character is being controlled.
         """
         # Iterates over all objects in the world which are the user.
         for character in self.characters:
-            if character.controlled:
+            if character.control.controlled:
                 return character
 
         return None
 
+    @property
+    def controlled_character(self) -> characters.Character:
+        """Returns whichever character is being controlled by the user.
+
+        Returns:
+            The currently selected character or None if no character is selected.
+
+        Raises:
+            AttributeError: No character is being controlled.
+        """
+        character = self.controlled_character_or_none
+
+        if character is None:
+            raise UndefinedPropertyError("No character is presently being controlled.")
+
+        return character
+
     @controlled_character.setter
-    def controlled_character(self, select_character: world_objects.Character) -> None:
+    def controlled_character(self, select_character: characters.Character) -> None:
         """Sets whichever character should be controlled, deselecting
         other characters.
 
@@ -273,7 +344,7 @@ class PlayingField:
             select_character: The character who should now be controlled.
         """
         for character in self.characters:
-            if character.controlled is select_character:
+            if character.control.controlled is select_character:
                 character.take_control()
             else:
                 character.relinquish_control()
@@ -284,8 +355,8 @@ class PlayingField:
         Args:
             pressed_keys: The mapping with key bindings to whether or not they are being pressed.
         """
-        character = self.controlled_character
-        if character and character.team.ai is None:
+        character = self.controlled_character_or_none
+        if character is not None and character.details.team.ai is None:
             character.process_key_presses(pressed_keys)
 
     def collision_pixel(self, x: float, y: float) -> bool:
@@ -323,11 +394,11 @@ class PlayingField:
         # Affects nearby characters caught in the blast.
         for character in self.characters:
             # Ignores dead characters.
-            if not character.alive:
+            if not character.health.alive:
                 continue
 
             # Finds the distance from the blast of the character.
-            vector = character.pos - pos
+            vector = character.kinematics.pos - pos
             distance = np.linalg.norm(vector)
 
             # Only affects the character if sufficiently close.
@@ -339,25 +410,25 @@ class PlayingField:
 
                 # Damages the character depending on how close the
                 # explosion was.
-                character.health -= radius - distance
+                character.health.hp -= radius - distance
 
                 # Kills the character if it runs out of health.
-                if character.health <= 0:
-                    character.alive = False
-                    character.vel = np.array((0.0, 0.0))
+                if character.health.hp <= 0:
+                    character.health.alive = False
+                    character.kinematics.vel = np.array((0.0, 0.0))
 
                     # Sends a message depending on who killed the
                     # character.
                     if caused_by is character:
                         logger.logger.log(f"{caused_by} has committed seppuku!")
-                    elif caused_by.team == character.team:
+                    elif caused_by.details.team == character.details.team:
                         logger.logger.log(f"{caused_by} accidentally killed {character}!")
                     else:
                         logger.logger.log(f"{caused_by} killed {character}!")
 
                 # Flings the character in the appropriate direction.
                 else:
-                    character.vel += (blast_direction * (radius - distance)) * 0.1
+                    character.kinematics.vel += (blast_direction * (radius - distance)) * 0.1
 
     def time_left_on_clock(self) -> float:
         """Determines how much time is left on the clock to perform an action.
@@ -368,3 +439,12 @@ class PlayingField:
         ticks_passed = ticks.total_ticks - self.game_state.last_general_tick
         time_passed = ticks_passed / settings.TICKS_PER_SECOND
         return np.ceil(settings.TIME_TO_ACT - time_passed)
+
+    def draw(self, display: bombsite.display.Display) -> None:
+        """Draws the playing field onto the display.
+
+        Args:
+            display: The display for the playing field.
+        """
+        for world_object in self.world_objects:
+            world_object.draw(display)
