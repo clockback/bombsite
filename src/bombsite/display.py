@@ -3,14 +3,18 @@
 Copyright © 2024 - Elliot Simpson
 """
 
-from typing import Optional
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Optional
 
 import numpy as np
 import numpy.typing as npt
 import pygame
 
 from bombsite import logger, settings, ticks
-from bombsite.world import playing_field
+
+if TYPE_CHECKING:
+    from bombsite.world import playing_field
 
 
 class Display:
@@ -67,11 +71,7 @@ class Display:
         self.screen.fill(pygame.Color("lightblue"))
 
         self.screen.blit(pf.image, (-self.x, -self.y))
-        for character in pf.characters:
-            character.draw(self)
-
-        for projectile in pf.projectiles:
-            pygame.draw.circle(self.screen, pygame.Color("black"), projectile.pos - self.pos, 2)
+        pf.draw(self)
 
         logger.logger.draw(self.screen)
 
@@ -105,6 +105,17 @@ class Display:
             top_left_y = pf.mask.shape[1] - settings.SCREEN_HEIGHT
 
         return int(top_left_x), int(top_left_y)
+
+    def find_focus(self, pf: playing_field.PlayingField) -> None:
+        """Determines whether to approach a point, and sets that point if needed.
+
+        Args:
+            pf: The playing field on which the display applies.
+        """
+        # Pans to the centre of the projectile.
+        display_focus = pf.get_centre()
+        if display_focus is not None:
+            self.set_focus(*display_focus)
 
     def approach_focus(self, pf: playing_field.PlayingField) -> None:
         """Moves the camera in the direction of the focus.
@@ -214,17 +225,27 @@ class Display:
             self.y = pf_height - settings.SCREEN_HEIGHT
             self.vy = 0.0
 
-    def update(self, pf: playing_field.PlayingField) -> None:
+    def update(self, pf: playing_field.PlayingField, new_focus: tuple[int, int] | None) -> None:
         """Updates the display.
 
         Args:
             pf: The playing field the display shows.
+            new_focus: If there is a location where the camera should focus, pans to it.
         """
+        if new_focus is not None:
+            self.set_focus(*new_focus)
+
         self.mouse_accelerate_camera()
+        self.find_focus(pf)
         self.approach_focus(pf)
         self.update_camera_pos(pf)
         self.update_display(pf)
 
     @property
     def pos(self) -> npt.NDArray[np.int_]:
+        """Returns the position of the camera.
+
+        Returns:
+            The camera's top-left corner's integer coordinates.
+        """
         return np.array((self.x, self.y)).astype(int)

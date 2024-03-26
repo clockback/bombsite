@@ -1,0 +1,6 @@
+[MASTER]
+extension-pkg-whitelist=pygame
+
+[MESSAGES CONTROL]
+
+disable=no-else-return

@@ -8,7 +8,7 @@ from typing import Optional
 
 import pygame
 
-import bombsite.settings as settings
+from bombsite import settings
 from bombsite.utils import package_path
 
 pygame.font.init()

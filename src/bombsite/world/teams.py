@@ -13,6 +13,8 @@ import pygame
 
 from bombsite import settings
 from bombsite.world import playing_field, world_objects
+from bombsite.world.characters import characters
+from bombsite.world.projectiles.rocket import Rocket
 
 colours: list[pygame.Color] = [
     pygame.Color(colour_name)
@@ -43,16 +45,23 @@ class Computer:
         self.firing_angle: Optional[float] = None
         self.firing_strength: Optional[float] = None
 
-    def find_nearest_enemy(self) -> world_objects.Character | None:
-        """Identifies the nearest enemy to the character."""
+    def find_nearest_enemy(self, controlled: characters.Character) -> characters.Character | None:
+        """Identifies the nearest enemy to the character.
+
+        Args:
+            controlled: The character which the team's AI is presently controlling.
+
+        Returns:
+            The nearest character to the controlled character, or None if no character is found.
+        """
         nearest_enemy = None
         nearest_enemy_dist = 0.0
 
-        controlled = self.team.pf.controlled_character
-
         for character in self.team.pf.characters:
-            if character.is_alive() and character.team is not self.team:
-                new_enemy_dist = np.linalg.norm(character.pos - controlled.pos)
+            if character.health.alive and character.details.team is not self.team:
+                new_enemy_dist = np.linalg.norm(
+                    character.kinematics.pos - controlled.kinematics.pos
+                )
 
                 if not nearest_enemy or nearest_enemy_dist > new_enemy_dist:
                     nearest_enemy = character
@@ -62,12 +71,7 @@ class Computer:
 
         # Faces the controlled character towards the target.
         if self.targeting_character is not None:
-            if self.targeting_character.x > controlled.x:
-                controlled.facing_r = True
-                controlled.facing_l = False
-            else:
-                controlled.facing_l = True
-                controlled.facing_r = False
+            controlled.facing_r = self.targeting_character.kinematics.x > controlled.kinematics.x
 
         return nearest_enemy_dist
 
@@ -87,13 +91,10 @@ class Computer:
             ):
                 for strength in np.linspace(0, settings.MAXIMUM_FIRING_POWER, 10):
                     attack_array = controlled.angle_array(angle, facing_l) * strength
-                    projectile = world_objects.Projectile(
+                    projectile = Rocket(
                         self.team.pf,
-                        controlled.x,
-                        controlled.y,
-                        float(attack_array[0]),
-                        float(attack_array[1]),
-                        settings.PROJECTILE_BLAST_RADIUS,
+                        (controlled.kinematics.x, controlled.kinematics.y),
+                        (float(attack_array[0]), float(attack_array[1])),
                         controlled,
                     )
                     damage, distance = projectile.phantom(self.targeting_character)
@@ -116,10 +117,10 @@ class Computer:
             return
 
         if self.targeting_character is None:
-            self.find_nearest_enemy()
+            self.find_nearest_enemy(controlled)
 
         if self.targeting_character is not None:
-            assert self.targeting_character.alive
+            assert self.targeting_character.health.alive
 
         if not self.time_to_act and self.team.pf.time_left_on_clock() < 5:
             self.time_to_act = True
@@ -127,20 +128,18 @@ class Computer:
         if self.time_to_act and self.firing_angle is None:
             self.is_firing_left, self.firing_angle, self.firing_strength = self.scan_attacks()
 
-        if controlled.facing_l != self.is_firing_left:
-            controlled.facing_l = self.is_firing_left
-            controlled.facing_r = not self.is_firing_left
+        controlled.facing_l = self.is_firing_left
 
-        if controlled.firing_angle < self.firing_angle:
+        if controlled.control.firing_angle < self.firing_angle:
             controlled.aim_upwards(self.firing_angle)
 
-        elif controlled.firing_angle > self.firing_angle:
+        elif controlled.control.firing_angle > self.firing_angle:
             controlled.aim_downwards(self.firing_angle)
 
-        elif not controlled.preparing_attack:
+        elif not controlled.control.preparing_attack:
             controlled.start_attack()
 
-        elif controlled.fire_strength < self.firing_strength:
+        elif controlled.control.firing_strength < self.firing_strength:
             controlled.prepare_attack(self.firing_strength)
 
         else:
@@ -175,9 +174,9 @@ class Team:
         """
         self.pf: playing_field.PlayingField = pf
         self.team_number: int = len(Team.teams) + 1
-        self.characters: list[world_objects.Character] = []
+        self.characters: list[characters.Character] = []
         self.teams.append(self)
-        self.character_queue: Generator[world_objects.Character, None, None] = self.next_character()
+        self.character_queue: Generator[characters.Character, None, None] = self.next_character()
         self.ai: Optional[Computer] = self.get_ai(has_ai)
 
     def __str__(self) -> str:
@@ -187,6 +186,15 @@ class Team:
             "Team {number}".
         """
         return f"Team {self.team_number}"
+
+    @property
+    def colour(self) -> pygame.Color:
+        """Returns the colour of the team.
+
+        Returns:
+            The RGB colour associated with the team, inferring from the team number.
+        """
+        return colours[self.team_number - 1]
 
     def get_ai(self, has_ai: bool) -> Optional[Computer]:
         """Obtains an AI computer player.
@@ -206,43 +214,10 @@ class Team:
             Returns a boolean for whether there is at least one living character.
         """
         for character in self.characters:
-            if character.alive:
+            if character.health.alive:
                 return True
 
         return False
-
-    @classmethod
-    def get_alive_teams(cls) -> list[Team]:
-        """Returns a list of all the teams still alive.
-
-        Returns:
-            A list containing each team in the order they were added, filtering out dead teams.
-        """
-        return list(filter(Team.check_if_alive, cls.teams))
-
-    @classmethod
-    def next_team(cls, last_team: Optional[Team] = None) -> Team:
-        """Finds the next team to play. If no previous team is provided, returns the first team.
-
-        Args:
-            last_team: The last team to have played, if one has played, otherwise None.
-
-        Returns:
-            The next team available to play.
-
-        Raises:
-            ValueError: The next team cannot be found using the last team as a reference.
-        """
-        live_teams = [team for team in cls.teams if team.check_if_alive() or team is last_team]
-
-        if last_team is None or len(live_teams) == 1:
-            return live_teams[0]
-
-        for team, team_after in zip(live_teams, live_teams[1:] + [live_teams[0]]):
-            if team is last_team:
-                return team_after
-
-        raise ValueError(f"Scanned teams {list(live_teams)} and didn't find {last_team}")
 
     def next_character(self) -> Generator[world_objects.Character, None, None]:
         """Continuously cycles over the living characters.
@@ -252,7 +227,7 @@ class Team:
         """
         while True:
             for character in self.characters.copy():
-                if character.alive:
+                if character.health.alive:
                     yield character
 
     def add_character(self, x: int, y: int, name: str) -> world_objects.Character:
@@ -267,9 +242,9 @@ class Team:
             The newly created character.
         """
         # Creates the character.
-        character = world_objects.Character(self.pf, x, y, name, team=self)
+        new_character = characters.Character(self.pf, (x, y), name, team=self)
 
         # Adds the character to the world.
-        self.characters.append(character)
+        self.characters.append(new_character)
 
-        return character
+        return new_character
