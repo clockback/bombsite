@@ -21,8 +21,28 @@ class LogMessage:
     text: str
     """The original string to be logged."""
 
-    image: Optional[pygame.Surface]
+    _image: Optional[pygame.Surface]
     """The rendering of the log message. If the message has expired, the image is discarded."""
+
+    @property
+    def image(self) -> pygame.Surface:
+        """Obtains the image of the log message.
+
+        Returns:
+            The image associated with the log message.
+
+        Raises:
+            ValueError: The log message's image has been deleted.
+        """
+        if self._image is None:
+            raise ValueError(f'Log message "{self.text}" no longer has associated image.')
+
+        return self._image
+
+    @image.deleter
+    def image(self) -> None:
+        """Delete's an image no longer needed for a log message."""
+        self._image = None
 
 
 class Logger:
@@ -51,7 +71,7 @@ class Logger:
 
         # Only stores three text images at a time to save memory.
         if len(self.messages) >= settings.LOG_LENGTH:
-            self.messages[-settings.LOG_LENGTH].image = None
+            del self.messages[-settings.LOG_LENGTH].image
 
         print(text)
 

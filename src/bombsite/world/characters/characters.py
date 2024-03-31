@@ -25,7 +25,7 @@ from bombsite.world.world_objects import WorldObject
 
 if TYPE_CHECKING:
     from bombsite.world import playing_field
-    from bombsite.world.teams import Team
+    from bombsite.world.teams.teams import Team
 
 
 class Character(WorldObject):
@@ -164,14 +164,11 @@ class Character(WorldObject):
             display: The display onto which the triangle is being drawn.
             colour: The colour of the triangle.
         """
+        offsets = [np.array((0, -20)), np.array((-5, -30)), np.array((5, -30))]
         pygame.draw.polygon(
             display.screen,
             colour,
-            [
-                self.kinematics.pos + np.array((0, -20)) - display.pos,
-                self.kinematics.pos + np.array((-5, -30)) - display.pos,
-                self.kinematics.pos + np.array((5, -30) - display.pos),
-            ],
+            [pygame.Vector2(*(self.kinematics.pos + offset - display.pos)) for offset in offsets],
         )
 
     def _draw_aim(self, display: bombsite.display.Display) -> None:
@@ -185,8 +182,8 @@ class Character(WorldObject):
             pygame.draw.line(
                 display.screen,
                 pygame.Color("darkgreen"),
-                self.kinematics.pos - display.pos,
-                self.kinematics.pos + 50 * self.angle_array() - display.pos,
+                pygame.Vector2(*(self.kinematics.pos - display.pos)),
+                pygame.Vector2(*(self.kinematics.pos + 50 * self.angle_array() - display.pos)),
             )
 
         # Draws the aim of the controlled character.
@@ -194,10 +191,14 @@ class Character(WorldObject):
             pygame.draw.line(
                 display.screen,
                 pygame.Color("black"),
-                self.kinematics.pos - display.pos,
-                self.kinematics.pos
-                + 12 * self.control.firing_strength * self.angle_array()
-                - display.pos,
+                pygame.Vector2(*(self.kinematics.pos - display.pos)),
+                pygame.Vector2(
+                    *(
+                        self.kinematics.pos
+                        + 12 * self.control.firing_strength * self.angle_array()
+                        - display.pos
+                    )
+                ),
             )
 
     def _draw_health(self, display: bombsite.display.Display) -> None:
@@ -256,7 +257,7 @@ class Character(WorldObject):
         self._draw_health(display)
         self._display_name(display, draw_pos)
 
-        pygame.draw.circle(display.screen, self.details.team.colour, draw_pos, 6)
+        pygame.draw.circle(display.screen, self.details.team.colour, pygame.Vector2(*draw_pos), 6)
 
     def _update_walk(self) -> None:
         """Changes the position of the character if walking."""

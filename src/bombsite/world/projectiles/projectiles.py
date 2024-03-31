@@ -75,7 +75,7 @@ class Projectile(WorldObject):
         """Removes the projectile."""
         self.pf.world_objects.remove(self)
 
-    def phantom(self, target: Character) -> tuple[int, int]:
+    def phantom(self, target: Character) -> tuple[int, float]:
         """Estimates the expected result of the projectile.
 
         Args:
@@ -96,7 +96,9 @@ class Projectile(WorldObject):
                 or self.kinematics.x > self.pf.mask.shape[0]
                 or self.kinematics.y > self.pf.mask.shape[1]
             ):
-                return net_damage, np.linalg.norm(self.kinematics.pos - target.kinematics.pos)
+                return net_damage, float(
+                    np.linalg.norm(self.kinematics.pos - target.kinematics.pos)
+                )
 
             if self.pf.collision_pixel(*self.kinematics.pos):
                 # Affects nearby characters caught in the blast.
@@ -115,7 +117,7 @@ class Projectile(WorldObject):
 
                 break
 
-        return net_damage, np.linalg.norm(self.kinematics.pos - target.kinematics.pos)
+        return net_damage, float(np.linalg.norm(self.kinematics.pos - target.kinematics.pos))
 
     def draw(self, display: bombsite.display.Display) -> None:
         """Draws the projectile onto the playing field.
@@ -123,9 +125,8 @@ class Projectile(WorldObject):
         Args:
             display: The display onto which the character is to be drawn.
         """
-        pygame.draw.circle(
-            display.screen, pygame.Color("black"), self.kinematics.pos - display.pos, 2
-        )
+        draw_x, draw_y = self.kinematics.pos - display.pos
+        pygame.draw.circle(display.screen, pygame.Color("black"), (draw_x, draw_y), 2)
 
     @abc.abstractmethod
     def explosion_radius(self) -> int:

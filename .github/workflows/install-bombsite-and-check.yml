@@ -16,3 +16,6 @@ jobs:
       - name: Run Pylint
         run: |
           python -m pylint --rcfile=.settings/pylintrc src/
+      - name: Run Mypy
+        run: |
+          python -m mypy src/

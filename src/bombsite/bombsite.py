@@ -7,14 +7,17 @@ Copyright © 2024 - Elliot Simpson
 
 from __future__ import annotations
 
-from typing import Literal
+from typing import TYPE_CHECKING, Literal
 
 import pygame
 
 import bombsite.display
 from bombsite import settings, ticks
 from bombsite.world import playing_field
-from bombsite.world.teams import Team
+from bombsite.world.teams.teams import Team
+
+if TYPE_CHECKING:
+    from bombsite.world.world_objects import WorldObject
 
 pygame.init()
 
@@ -33,7 +36,7 @@ def test_bombsite() -> None:
     pf.teams.extend([team_1, team_2, team_3])
 
     # Creates a list of characters.
-    characters = [
+    characters: list[WorldObject] = [
         team_1.add_character(100, 500, "Joey"),
         team_2.add_character(200, 500, "Ronald"),
         team_3.add_character(300, 500, "Ricky"),

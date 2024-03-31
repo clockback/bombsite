@@ -6,6 +6,7 @@
         "astype",
         "blit",
         "dtype",
+        "mypy",
         "numpy",
         "pygame"
     ]

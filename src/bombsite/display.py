@@ -82,17 +82,20 @@ class Display:
 
         pygame.display.flip()
 
-    def get_top_left_focus_coords(self, pf: playing_field.PlayingField) -> tuple[float, float]:
+    def get_top_left_focus_coords(
+        self, pf: playing_field.PlayingField, focus: npt.NDArray[np.int_]
+    ) -> tuple[float, float]:
         """Finds the camera coordinates of the desired top-left corner once centred on the focus.
 
         Args:
             pf: The playing field on which the display applies.
+            focus: The coordinates of the focus.
 
         Returns:
             The x-coordinate and the y-coordinate of the top-left corner of the expected screen.
         """
-        top_left_x = self.focus[0] - settings.SCREEN_WIDTH // 2
-        top_left_y = self.focus[1] - settings.SCREEN_HEIGHT // 2
+        top_left_x = focus[0] - settings.SCREEN_WIDTH // 2
+        top_left_y = focus[1] - settings.SCREEN_HEIGHT // 2
 
         if top_left_x < 0:
             top_left_x = 0
@@ -126,7 +129,7 @@ class Display:
         if self.focus is None:
             return
 
-        top_left_x, top_left_y = self.get_top_left_focus_coords(pf)
+        top_left_x, top_left_y = self.get_top_left_focus_coords(pf, self.focus)
 
         if self.x < self.focus[0]:
             self.vx = min((self.vx + 0.1, (top_left_x - self.x) * 0.1))
@@ -198,7 +201,7 @@ class Display:
         self.y += self.vy
 
         if self.focus is not None:
-            top_left_x, top_left_y = self.get_top_left_focus_coords(pf)
+            top_left_x, top_left_y = self.get_top_left_focus_coords(pf, self.focus)
 
             if self.focus is not None and abs(self.x - top_left_x) < 0.1:
                 self.x = top_left_x
