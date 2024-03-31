@@ -21,7 +21,7 @@ class Control:
     preparing_attack: bool = False
     """Whether or not the character is preparing an attack."""
 
-    firing_angle: int = 30
+    firing_angle: float = 30.0
     """The angle at which the character is aiming."""
 
     firing_strength: float = 0.0

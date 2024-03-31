@@ -18,7 +18,7 @@ from bombsite.world.characters import characters
 
 if TYPE_CHECKING:
     import bombsite.display
-    from bombsite.world import teams
+    from bombsite.world.teams import teams
 
 
 WO = TypeVar("WO", bound=world_objects.WorldObject)
@@ -252,7 +252,8 @@ class PlayingField:
     def process_mask(
         self,
         overlay: Callable[
-            [npt.NDArray[np.int64], npt.NDArray[np.int64], npt.NDArray[np.uint8]], None
+            [npt.NDArray[np.int64], npt.NDArray[np.int64], npt.NDArray[np.uint8]],
+            npt.NDArray[np.uint8],
         ],
     ) -> None:
         """Takes a playing field mask and applies it to the existing mask.
@@ -288,17 +289,6 @@ class PlayingField:
         """
         for world_object in self.world_objects:
             if isinstance(world_object, world_object_type):
-                yield world_object
-
-    @property
-    def characters(self) -> Generator[characters.Character, None, None]:
-        """Yields each world object that is a character.
-
-        Yields:
-            Each character in the world.
-        """
-        for world_object in self.world_objects:
-            if isinstance(world_object, characters.Character):
                 yield world_object
 
     @property
@@ -378,7 +368,7 @@ class PlayingField:
     def explosion(
         self,
         pos: npt.NDArray[np.double],
-        caused_by: world_objects.Character,
+        caused_by: characters.Character,
         radius: int = 40,
     ) -> None:
         """Causes an explosion to damage the nearby terrain and characters.
@@ -410,7 +400,7 @@ class PlayingField:
 
                 # Damages the character depending on how close the
                 # explosion was.
-                character.health.hp -= radius - distance
+                character.health.hp -= radius - int(distance)
 
                 # Kills the character if it runs out of health.
                 if character.health.hp <= 0:
@@ -448,3 +438,14 @@ class PlayingField:
         """
         for world_object in self.world_objects:
             world_object.draw(display)
+
+    @property
+    def characters(self) -> Generator[characters.Character, None, None]:
+        """Yields each world object that is a character.
+
+        Yields:
+            Each character in the world.
+        """
+        for world_object in self.world_objects:
+            if isinstance(world_object, characters.Character):
+                yield world_object

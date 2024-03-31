@@ -12,9 +12,10 @@ import numpy.typing as npt
 import pygame
 
 from bombsite import settings
-from bombsite.world import playing_field, world_objects
+from bombsite.world import playing_field
 from bombsite.world.characters import characters
 from bombsite.world.projectiles.rocket import Rocket
+from bombsite.world.teams.battleplan import BattlePlan
 
 colours: list[pygame.Color] = [
     pygame.Color(colour_name)
@@ -27,8 +28,7 @@ class Computer:
 
     Attributes:
         team: The team the AI applies to.
-        targeting_character: The character that the AI has most recently decided to attack.
-        time_to_act:
+        _targeting_character: The character that the AI has most recently decided to attack.
     """
 
     def __init__(self, team: Team) -> None:
@@ -38,21 +38,51 @@ class Computer:
             team: The team which has the computer AI.
         """
         self.team: Team = team
-        self.targeting_character: Optional[world_objects.Character] = None
-        self.time_to_act: bool = True
+        self._targeting_character: Optional[characters.Character] = None
         self.destination: Optional[npt.NDArray[np.int_]]
-        self.is_firing_left: Optional[bool] = None
-        self.firing_angle: Optional[float] = None
-        self.firing_strength: Optional[float] = None
+        self.battleplan: BattlePlan | None = None
 
-    def find_nearest_enemy(self, controlled: characters.Character) -> characters.Character | None:
+    @property
+    def targeting_character_or_none(self) -> characters.Character | None:
+        """Returns whichever character the AI is presently targeting.
+
+        Returns:
+            The character which the AI is attempting to fire at. This is not strict, and is to help
+            the AI fire as close as it can to an enemy, even when it does not strike the enemy.
+        """
+        return self._targeting_character
+
+    @property
+    def targeting_character(self) -> characters.Character:
+        """Returns whichever character the AI is presently targeting.
+
+        Returns:
+            The character which the AI is attempting to fire at. This is not strict, and is to help
+            the AI fire as close as it can to an enemy, even when it does not strike the enemy.
+
+        Raises:
+            ValueError: The AI is not targeting anyone.
+        """
+        character = self.targeting_character_or_none
+
+        if character is None:
+            raise ValueError("No targeting charactering found.")
+
+        return character
+
+    def set_targeting_character(self, character: characters.Character | None) -> None:
+        """Sets the character which the AI is targeting.
+
+        Args:
+            character: The new character the AI is going to target.
+        """
+        self._targeting_character = character
+
+    def find_nearest_enemy(self, controlled: characters.Character) -> None:
         """Identifies the nearest enemy to the character.
 
         Args:
             controlled: The character which the team's AI is presently controlling.
-
-        Returns:
-            The nearest character to the controlled character, or None if no character is found.
         """
         nearest_enemy = None
         nearest_enemy_dist = 0.0
@@ -65,22 +95,25 @@ class Computer:
 
                 if not nearest_enemy or nearest_enemy_dist > new_enemy_dist:
                     nearest_enemy = character
-                    nearest_enemy_dist = new_enemy_dist
-
-        self.targeting_character = nearest_enemy
+                    nearest_enemy_dist = float(new_enemy_dist)
 
         # Faces the controlled character towards the target.
-        if self.targeting_character is not None:
-            controlled.facing_r = self.targeting_character.kinematics.x > controlled.kinematics.x
+        if nearest_enemy is not None:
+            controlled.facing_r = nearest_enemy.kinematics.x > controlled.kinematics.x
 
-        return nearest_enemy_dist
+        self.set_targeting_character(nearest_enemy)
 
-    def scan_attacks(self) -> tuple[bool, float, float]:
-        """Checks various options of attack."""
+    def scan_attacks(self) -> BattlePlan:
+        """Checks various options of attack.
+
+        Returns:
+            A plan of attack containing the direction that the character should face, the angle at
+            which it should fire, and the strength with which should fire.
+        """
         controlled = self.team.pf.controlled_character
 
         best_damage = 0.0
-        best_distance = 100000
+        best_distance = 100000.0
         should_face_l = controlled.facing_l
         best_angle = (settings.MAXIMUM_FIRING_ANGLE + settings.MINIMUM_FIRING_ANGLE) / 2
         best_strength = settings.MAXIMUM_FIRING_POWER // 2
@@ -105,9 +138,9 @@ class Computer:
                         best_angle = angle
                         best_strength = strength
 
-        return should_face_l, best_angle, best_strength
+        return BattlePlan(should_face_l, best_angle, best_strength)
 
-    def run_ai(self, controlled: world_objects.Character) -> None:
+    def run_ai(self, controlled: characters.Character) -> None:
         """Operates the AI for the team.
 
         Args:
@@ -116,38 +149,30 @@ class Computer:
         if not self.team.pf.game_state.controlled_can_attack:
             return
 
-        if self.targeting_character is None:
+        if self.targeting_character_or_none is None:
             self.find_nearest_enemy(controlled)
 
-        if self.targeting_character is not None:
-            assert self.targeting_character.health.alive
+        if self.battleplan is None:
+            self.battleplan = self.scan_attacks()
 
-        if not self.time_to_act and self.team.pf.time_left_on_clock() < 5:
-            self.time_to_act = True
+        controlled.facing_l = self.battleplan.is_firing_left
 
-        if self.time_to_act and self.firing_angle is None:
-            self.is_firing_left, self.firing_angle, self.firing_strength = self.scan_attacks()
+        if controlled.control.firing_angle < self.battleplan.firing_angle:
+            controlled.aim_upwards(self.battleplan.firing_angle)
 
-        controlled.facing_l = self.is_firing_left
-
-        if controlled.control.firing_angle < self.firing_angle:
-            controlled.aim_upwards(self.firing_angle)
-
-        elif controlled.control.firing_angle > self.firing_angle:
-            controlled.aim_downwards(self.firing_angle)
+        elif controlled.control.firing_angle > self.battleplan.firing_angle:
+            controlled.aim_downwards(self.battleplan.firing_angle)
 
         elif not controlled.control.preparing_attack:
             controlled.start_attack()
 
-        elif controlled.control.firing_strength < self.firing_strength:
-            controlled.prepare_attack(self.firing_strength)
+        elif controlled.control.firing_strength < self.battleplan.firing_strength:
+            controlled.prepare_attack(self.battleplan.firing_strength)
 
         else:
             controlled.release_attack()
-            self.is_firing_left = None
-            self.firing_angle = None
-            self.firing_strength = None
-            self.targeting_character = None
+            self.battleplan = None
+            self.set_targeting_character(None)
 
 
 class Team:
@@ -219,7 +244,7 @@ class Team:
 
         return False
 
-    def next_character(self) -> Generator[world_objects.Character, None, None]:
+    def next_character(self) -> Generator[characters.Character, None, None]:
         """Continuously cycles over the living characters.
 
         Yields:
@@ -230,7 +255,7 @@ class Team:
                 if character.health.alive:
                     yield character
 
-    def add_character(self, x: int, y: int, name: str) -> world_objects.Character:
+    def add_character(self, x: int, y: int, name: str) -> characters.Character:
         """Adds a character to the team adhering to certain parameters.
 
         Args:
