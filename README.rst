@@ -1,6 +1,5 @@
-========
-Bombsite
-========
+.. image:: https://raw.githubusercontent.com/clockback/bombsite/master/src/bombsite/images/logo/bombsite.svg
+   :align: center
 
 Bombsite is a free and open-source video game inspired by WarMUX, itself inspired by Worms. The player commands a collection of characters who battle against other teams in a turn-based artillery game.
 

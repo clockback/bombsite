@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   width="65.474998mm"
+   height="47.409mm"
+   viewBox="0 0 65.474998 47.409"
+   version="1.1"
+   id="svg1"
+   inkscape:version="1.3.1 (9b9bdc1480, 2023-11-25, custom)"
+   sodipodi:docname="bombsite.svg"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:xlink="http://www.w3.org/1999/xlink"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <sodipodi:namedview
+     id="namedview1"
+     pagecolor="#ffffff"
+     bordercolor="#000000"
+     borderopacity="0.25"
+     inkscape:showpageshadow="2"
+     inkscape:pageopacity="0.0"
+     inkscape:pagecheckerboard="0"
+     inkscape:deskcolor="#d1d1d1"
+     inkscape:document-units="mm"
+     inkscape:zoom="1.5019781"
+     inkscape:cx="-48.269678"
+     inkscape:cy="114.84854"
+     inkscape:window-width="1920"
+     inkscape:window-height="1043"
+     inkscape:window-x="1920"
+     inkscape:window-y="0"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="layer1" />
+  <defs
+     id="defs1">
+    <linearGradient
+       id="linearGradient6"
+       inkscape:collect="always">
+      <stop
+         style="stop-color:#282121;stop-opacity:1;"
+         offset="0"
+         id="stop6" />
+      <stop
+         style="stop-color:#000000;stop-opacity:1;"
+         offset="1"
+         id="stop7" />
+    </linearGradient>
+    <rect
+       x="-52.602951"
+       y="-213.84068"
+       width="211.46515"
+       height="258.48337"
+       id="rect2" />
+    <radialGradient
+       inkscape:collect="always"
+       xlink:href="#linearGradient6"
+       id="radialGradient7"
+       cx="23.586037"
+       cy="24.33379"
+       fx="23.586037"
+       fy="24.33379"
+       r="18.772827"
+       gradientUnits="userSpaceOnUse" />
+  </defs>
+  <g
+     inkscape:label="Layer 1"
+     inkscape:groupmode="layer"
+     id="layer1">
+    <circle
+       style="fill:#000000;stroke-width:0.264583"
+       id="path1"
+       cx="23.7045"
+       cy="23.7045"
+       r="23.7045" />
+    <rect
+       style="fill:#000000;stroke-width:0.264583"
+       id="rect1"
+       width="11.249249"
+       height="7.5207376"
+       x="24.884356"
+       y="-36.23624"
+       transform="rotate(60)" />
+    <path
+       style="fill:#000000;stroke-width:0.264583"
+       id="path2"
+       d="m 43.179457,10.669715 c 0.119216,-0.08254 0.233188,-0.17323 0.357648,-0.247634 1.689304,-1.0098801 3.593163,-1.686797 5.441722,-2.3358379 1.653411,-0.5175075 3.307554,-0.9209524 5.053934,-0.8105672 0.939818,0.059404 1.357489,0.1834034 2.263237,0.3785325 0.917713,0.2403996 1.803051,0.5840092 2.682844,0.934698 0.433736,0.1728899 0.858067,0.3628205 1.30126,0.5112584 0.187039,0.062645 0.378653,0.1106974 0.567981,0.1660461 0.622208,0.1421696 1.285973,0.2949551 1.924809,0.1503024 0.354748,-0.080326 0.460076,-0.1697876 0.773277,-0.3460483 0.692534,-0.4987226 1.18065,-1.182897 1.553647,-1.941169 0.165356,-0.3676883 0.294087,-0.7500715 0.375089,-1.144828 0,0 -3.47418,-1.8055717 -3.47418,-1.8055717 v 0 c 0.02476,0.3692168 -0.08957,0.733969 -0.20778,1.0795299 C 61.46511,6.0060461 61.108901,6.5589192 60.396077,6.9997311 60.283476,7.0494744 60.175052,7.1100277 60.05827,7.1489609 59.369142,7.3787076 58.622533,7.1934262 57.944974,7.0242924 56.493806,6.5730376 55.100312,5.9387721 53.607723,5.6221436 52.761184,5.4803603 52.23624,5.3637558 51.362747,5.3418644 c -1.731836,-0.043403 -3.410326,0.4253455 -5.045056,0.9444834 -0.431345,0.1501629 -0.864754,0.2945307 -1.294038,0.4504888 -1.70284,0.6186369 -3.37593,1.3329092 -5.134149,1.7877838 z" />
+    <circle
+       style="fill:url(#radialGradient7);stroke-width:0.264583"
+       id="path6"
+       cx="23.586037"
+       cy="24.33379"
+       r="18.772827" />
+    <text
+       xml:space="preserve"
+       transform="matrix(0.26458333,0,0,0.26458333,22.075509,49.728567)"
+       id="text2"
+       style="font-size:192px;white-space:pre;shape-inside:url(#rect2);fill:#ffffff"><tspan
+         x="-52.603516"
+         y="-30.210941"
+         id="tspan3"><tspan
+           style="font-family:Ubuntu;-inkscape-font-specification:Ubuntu"
+           id="tspan1">B</tspan></tspan></text>
+  </g>
+</svg>
