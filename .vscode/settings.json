@@ -12,5 +12,6 @@
     ],
     "pylint.args": [
         "--rcfile=${workspaceFolder}/.settings/pylintrc"
-    ]
+    ],
+    "esbonio.sphinx.confDir": ""
 }
