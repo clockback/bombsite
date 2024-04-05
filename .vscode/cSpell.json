@@ -8,6 +8,7 @@
         "dtype",
         "mypy",
         "numpy",
-        "pygame"
+        "pygame",
+        "srcalpha"
     ]
 }

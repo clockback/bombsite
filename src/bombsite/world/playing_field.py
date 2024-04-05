@@ -5,15 +5,15 @@ Copyright © 2024 - Elliot Simpson
 
 from __future__ import annotations
 
-from pathlib import Path
 from typing import TYPE_CHECKING, Callable, Generator, Optional, Type, TypeVar
 
 import numpy as np
 import numpy.typing as npt
 import pygame
 
-from bombsite import logger, settings, ticks
-from bombsite.world import gamestate, world_objects
+from bombsite import settings, ticks
+from bombsite.utils import package_path
+from bombsite.world import gamestate, logger, world_objects
 from bombsite.world.characters import characters
 
 if TYPE_CHECKING:
@@ -51,7 +51,7 @@ class PlayingField:
             name: The name of the playing field which corresponds with its image.
         """
         # Obtains and loads the image for the playing field.
-        path_to_image = Path(__file__).parent.parent / "images" / "playing_fields" / f"{name}.png"
+        path_to_image = package_path / "images" / "playing_fields" / f"{name}.png"
         self.image: pygame.Surface = pygame.image.load(path_to_image).convert_alpha()
 
         # Finds the playing field's image's alpha array.
