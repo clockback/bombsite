@@ -18,7 +18,10 @@ class ModuleComponent:
     """A data structure that is used by modules to construct other modules."""
 
     module_reference: ModuleEnum
+    """A reference to a module type."""
+
     screen: Surface | None = None
+    """The display for the game."""
 
     @staticmethod
     def get_non_null_or_fail(value: T | None) -> T:
