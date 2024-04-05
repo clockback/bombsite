@@ -187,9 +187,6 @@ class Team:
         ai: The AI acting on the team, if there is one, otherwise None.
     """
 
-    teams: list[Team] = []
-    """A complete list of all teams."""
-
     def __init__(self, pf: playing_field.PlayingField, has_ai: bool = False) -> None:
         """Creates the team according to the provided parameters.
 
@@ -198,9 +195,9 @@ class Team:
             has_ai: Whether or not the team is controlled by an AI.
         """
         self.pf: playing_field.PlayingField = pf
-        self.team_number: int = len(Team.teams) + 1
+        self.team_number: int = len(pf.teams) + 1
         self.characters: list[characters.Character] = []
-        self.teams.append(self)
+        pf.teams.append(self)
         self.character_queue: Generator[characters.Character, None, None] = self.next_character()
         self.ai: Optional[Computer] = self.get_ai(has_ai)
 

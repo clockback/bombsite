@@ -9,7 +9,7 @@ from typing import Optional
 import pygame
 
 from bombsite import settings
-from bombsite.utils import package_path
+from bombsite.utils import fonts_path
 
 pygame.font.init()
 
@@ -57,7 +57,7 @@ class Logger:
         """Creates the logger."""
         self.messages: list[LogMessage] = []
         self.font: pygame.font.Font = pygame.font.Font(
-            package_path / "fonts" / "playpen_sans" / "PlaypenSans-Regular.ttf", 30
+            fonts_path / "playpen_sans" / "PlaypenSans-Regular.ttf", 30
         )
 
     def log(self, text: str) -> None:

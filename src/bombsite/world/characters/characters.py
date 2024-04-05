@@ -14,8 +14,9 @@ import pygame.key
 from typing_extensions import Self
 
 import bombsite.display
-from bombsite import logger, settings
-from bombsite.utils import package_path
+from bombsite import settings
+from bombsite.utils import fonts_path
+from bombsite.world import logger
 from bombsite.world.characters.control import Control
 from bombsite.world.characters.details import Details
 from bombsite.world.characters.health import Health
@@ -39,7 +40,7 @@ class Character(WorldObject):
     """
 
     font: pygame.font.Font = pygame.font.Font(
-        package_path / "fonts" / "playpen_sans" / "PlaypenSans-Regular.ttf", 10
+        fonts_path / "playpen_sans" / "PlaypenSans-Regular.ttf", 10
     )
     """The font used to render the names of the characters."""
 

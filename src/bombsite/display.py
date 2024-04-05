@@ -11,7 +11,8 @@ import numpy as np
 import numpy.typing as npt
 import pygame
 
-from bombsite import logger, settings, ticks
+from bombsite import settings, ticks
+from bombsite.world import logger
 
 if TYPE_CHECKING:
     from bombsite.world import playing_field
@@ -29,29 +30,14 @@ class Display:
         focus: The destination of the camera, towards which it pans, if there is one, else None.
     """
 
-    def __init__(self) -> None:
+    def __init__(self, screen: pygame.Surface) -> None:
         """Creates the Pygame display."""
-        self.screen: pygame.Surface = self.get_screen()
+        self.screen: pygame.Surface = screen
         self.x: float = 0
         self.vx: float = 0
         self.y: float = 0
         self.vy: float = 0
         self.focus: Optional[npt.NDArray[np.int_]] = None
-
-    @staticmethod
-    def get_screen() -> pygame.Surface:
-        """Creates a window for the game.
-
-        Returns:
-            The window.
-        """
-        # Creates the window.
-        screen = pygame.display.set_mode((settings.SCREEN_WIDTH, settings.SCREEN_HEIGHT))
-
-        # Sets a name for the window.
-        pygame.display.set_caption("Bombsite")
-
-        return screen
 
     def set_focus(self, x: int, y: int) -> None:
         """Sets a new focus so that the display will pan to it.

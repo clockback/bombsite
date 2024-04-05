@@ -8,3 +8,13 @@ from pathlib import Path
 __all__: list[str] = ["package_path"]
 
 package_path: Path = Path(__file__).parent
+fonts_path: Path = package_path / "fonts"
+
+
+def return_system_exit() -> SystemExit:
+    """Exits the game.
+
+    Returns:
+        A SystemExit with a return code of zero.
+    """
+    return SystemExit(0)
