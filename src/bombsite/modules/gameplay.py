@@ -83,8 +83,8 @@ class GamePlay(Module):
             return ModuleComponent(ModuleEnum.MAIN_MENU, screen=self.display.screen)
 
         elif event.type == pygame.KEYDOWN and event.key == pygame.K_RETURN:
-            character = self.playing_field.controlled_character
-            if character.details.team.ai is None:
+            character = self.playing_field.controlled_character_or_none
+            if character and character.details.team.ai is None:
                 character.start_attack()
 
         return None
