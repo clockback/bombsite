@@ -66,8 +66,6 @@ class Display:
             image = ticks.font.render(str(countdown), 1, pygame.Color("black"))
             self.screen.blit(image, (settings.SCREEN_WIDTH / 2 - image.get_width() / 2, 0))
 
-        pygame.display.flip()
-
     def get_top_left_focus_coords(
         self, pf: playing_field.PlayingField, focus: npt.NDArray[np.int_]
     ) -> tuple[float, float]:

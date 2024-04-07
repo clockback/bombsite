@@ -108,6 +108,11 @@ class Kinematics:
         """
         return int(self.x), int(self.y)
 
+    def null_velocity(self) -> None:
+        """Sets the world object's velocity components to zero."""
+        self.vx = 0.0
+        self.vy = 0.0
+
 
 class WorldObject(abc.ABC):
     """Any world object on the playing field.
@@ -171,11 +176,6 @@ class WorldObject(abc.ABC):
             display: The display onto which the character is to be drawn.
         """
 
-    def null_velocity(self) -> None:
-        """Sets the world object's velocity components to zero."""
-        self.kinematics.vx = 0.0
-        self.kinematics.vy = 0.0
-
     def set_vx(self, vx: float) -> None:
         """Sets the new value for the horizontal velocity of the world object.
 
@@ -199,3 +199,127 @@ class WorldObject(abc.ABC):
             pos: The position of the world object.
         """
         self.kinematics.pos = pos.astype(float)
+
+    def _surrounding_is(self, match: npt.NDArray[np.int_]) -> bool:
+        """Checks if the mask around the character matches the template given.
+
+        Args:
+            match: A 3x3 array, centered on the character's position, with the expected values:
+                * 0 for no ground.
+                * 1 for ground.
+                * -1 for either (does not matter which).
+
+        Returns:
+            Whether or not the mask and match correspond.
+
+        Raises:
+            ValueError: The provided array is not the right shape.
+        """
+        # Raises an error for a malformed match array.
+        if match.shape != (3, 3):
+            raise ValueError(f"Expected array with dimensions (3, 3). Got {match.shape}.")
+
+        # Obtains the part of the mask around the character, using clipping to prevent index errors
+        # when the character is outside the map boundaries.
+        x, y = self.kinematics.pos.astype(int)
+        cols = self.pf.mask.take(range(x - 1, x + 2), axis=0, mode="clip")
+        section = cols.take(range(y - 1, y + 2), axis=1, mode="clip").transpose()
+
+        # An error only occurs where the sum of the mask and match at a position is equal to 1,
+        # which only happens when one value is 0 and another value is 1, meaning that whatever
+        # value checked in the match is not in the mask.
+        return 1 not in (match + section)
+
+    @property
+    def _bounce_halting_speed(self) -> float:
+        """Returns the speed below which all bounces must not happen.
+
+        Returns:
+            A value indicating the total speed below which bouncing stops.
+        """
+        return NotImplemented
+
+    @property
+    def _bounce_factor(self) -> float:
+        """A bounce factor. The higher the factor, the greater the bounce.
+
+        Returns:
+            A value indicating how elastically the world object bounces.
+        """
+        return NotImplemented
+
+    def _bounce_given_factor(self, ratio_x: float, ratio_y: float) -> None:
+        """Modifies the existing velocity to bounce.
+
+        Args:
+            ratio_x: The effect the bounce has on the x-velocity component.
+            ratio_y: The effect the bounce has on the y-velocity component.
+        """
+        self.set_vx(ratio_x * self._bounce_factor)
+        self.set_vy(ratio_y * self._bounce_factor)
+
+    def _bounce(self) -> None:
+        """Bounces off whatever surface the character hit."""
+        # Does not bounce if not fast enough.
+        if np.linalg.norm(self.kinematics.vel) <= self._bounce_halting_speed:
+            self.kinematics.null_velocity()
+
+        # Bounces if the ground is flat.
+        elif self._surrounding_is(np.array(((0, 0, 0), (0, 0, 0), (1, 1, 1)))):
+            self._bounce_given_factor(0.8 * self.kinematics.vx, -0.4 * self.kinematics.vy)
+
+        # Bounces if the ground is sloped downwards to the right.
+        elif self._surrounding_is(np.array(((0, 0, 0), (1, 0, 0), (-1, 1, -1)))):
+            self._bounce_given_factor(0.6 * self.kinematics.vy, 0.6 * self.kinematics.vx)
+
+        # Bounces if the ground is sloped downwards to the left.
+        elif self._surrounding_is(np.array(((0, 0, 0), (0, 0, 1), (-1, 1, -1)))):
+            self._bounce_given_factor(-0.6 * self.kinematics.vy, -0.6 * self.kinematics.vx)
+
+        # If the ground is too unpredictable, the character stops falling.
+        else:
+            self.kinematics.null_velocity()
+
+    def _will_collide(self) -> bool:
+        """Detects if a collision will occur due to the world object's movement.
+
+        Returns:
+            True if a collision has occurred, otherwise false.
+        """
+        return self.pf.collision_pixel(*(self.kinematics.pos + self.kinematics.vel).astype(int))
+
+    def _collide(self) -> None:
+        """Enacts a collision with the playing field."""
+        raise NotImplementedError
+
+    def _update_position(self, check_collision: bool = True) -> None:
+        """Updates the position of the world object, checking for collision if necessary.
+
+        Args:
+            check_collision: Whether or not to check for collision.
+        """
+        if check_collision and self._will_collide():
+            self._collide()
+        else:
+            self.set_pos(self.kinematics.pos + self.kinematics.vel)
+
+    @abc.abstractmethod
+    def is_in_steady_state(self) -> bool:
+        """Determines whether or not the world object is going to remain still without provocation.
+
+        Returns:
+            True if the world object will remain still without provocation, False if it is moving
+            or could cause motion later.
+        """
+
+    def _exited_playing_field(self) -> bool:
+        """Determines whether or not the world object is still in the playing field area.
+
+        Returns:
+            True if the world object is still in the playing field, False otherwise.
+        """
+        return (
+            self.kinematics.x < 0
+            or self.kinematics.x > self.pf.mask.shape[0]
+            or self.kinematics.y > self.pf.mask.shape[1]
+        )

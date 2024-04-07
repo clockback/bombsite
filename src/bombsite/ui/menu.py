@@ -17,6 +17,8 @@ class Menu:
 
     Attributes:
         widgets: Each widget in the main menu.
+        width: The width of the menu.
+        height: The height of the menu.
     """
 
     def __init__(self, width: int) -> None:

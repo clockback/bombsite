@@ -21,7 +21,6 @@ from bombsite.world.characters.control import Control
 from bombsite.world.characters.details import Details
 from bombsite.world.characters.health import Health
 from bombsite.world.characters.walking import Walking
-from bombsite.world.projectiles.rocket import Rocket
 from bombsite.world.world_objects import WorldObject
 
 if TYPE_CHECKING:
@@ -306,6 +305,17 @@ class Character(WorldObject):
         elif self._moving_right:
             self.facing_r = True
 
+    def _collide(self) -> None:
+        """Enacts a collision with the playing field."""
+        lower_bound = self.kinematics.pos.astype(int)
+
+        if not self.pf.collision_pixel(*lower_bound):
+            upper_bound = (self.kinematics.pos + self.kinematics.vel).astype(int)
+            self.set_pos(self.pf.find_collision_point(lower_bound, upper_bound))
+
+        self._collision_damage()
+        self._bounce()
+
     def update(self) -> None:
         """Updates the character's attributes.
 
@@ -333,33 +343,7 @@ class Character(WorldObject):
 
         # Makes the character accelerate downwards.
         self.apply_gravity()
-
-        first_bound = self.kinematics.pos.astype(int)
-        last_bound = (self.kinematics.pos + self.kinematics.vel).astype(int)
-
-        if self.pf.collision_pixel(*last_bound):
-            if not self.pf.collision_pixel(*first_bound):
-                for _i in range(100):
-                    middle_bound = np.ceil((first_bound + last_bound) / 2).astype(int)
-
-                    if np.array_equal(middle_bound, last_bound) or np.array_equal(
-                        middle_bound, first_bound
-                    ):
-                        self.set_pos(first_bound)
-                        break
-
-                    if self.pf.collision_pixel(*middle_bound):
-                        last_bound = middle_bound
-                    else:
-                        first_bound = middle_bound
-
-                else:
-                    raise ValueError("Cannot resolve position.")
-
-            self._bounce()
-
-        else:
-            self.set_pos(self.kinematics.pos + self.kinematics.vel)
+        self._update_position()
 
         self._update_facing_direction()
         self._check_outside_boundaries()
@@ -457,17 +441,8 @@ class Character(WorldObject):
         if self.control.preparing_attack and self.pf.game_state.controlled_can_attack:
             self.control.preparing_attack = False
 
-            projectile_vel = self.angle_array() * self.control.firing_strength
+            self.details.team.attack.release(self)
             self.control.firing_strength = 0
-
-            self.pf.world_objects.append(
-                Rocket(
-                    self.pf,
-                    (self.kinematics.x, self.kinematics.y),
-                    (float(projectile_vel[0]), float(projectile_vel[1])),
-                    self,
-                )
-            )
 
             self.pf.game_state.controlled_can_attack = False
             self.pf.game_state.controlled_can_just_walk = True
@@ -542,59 +517,20 @@ class Character(WorldObject):
         if not self.health.alive:
             return
 
-        field_width, field_height = self.pf.mask.shape
-
-        if (
-            self.kinematics.x < 0
-            or self.kinematics.x > field_width
-            or self.kinematics.y > field_height
-        ):
+        if self._exited_playing_field():
             logger.logger.log(f"{self} has fallen off the face of the earth!")
             self.health.alive = False
-            self.null_velocity()
+            self.kinematics.null_velocity()
 
-    def _surrounding_is(self, match: npt.NDArray[np.int_]) -> bool:
-        """Checks if the mask around the character matches the template given.
-
-        Args:
-            match: A 3x3 array, centered on the character's position,
-                with the expected values:
-                * 0 for no ground.
-                * 1 for ground.
-                * -1 for either (does not matter which).
-
-        Returns:
-            Whether or not the mask and match correspond.
-
-        Raises:
-            ValueError: The provided array is not the right shape.
-        """
-        # Raises an error for a malformed match array.
-        if match.shape != (3, 3):
-            raise ValueError(f"Expected array with dimensions (3, 3). Got {match.shape}.")
-
-        # Obtains the part of the mask around the character, using
-        # clipping to prevent index errors when the character is outside
-        # the map boundaries.
-        x, y = self.kinematics.pos.astype(int)
-        cols = self.pf.mask.take(range(x - 1, x + 2), axis=0, mode="clip")
-        section = cols.take(range(y - 1, y + 2), axis=1, mode="clip").transpose()
-
-        # An error only occurs where the sum of the mask and match at a
-        # position is equal to 1, which only happens when one value is
-        # 0 and another value is 1, meaning that whatever value checked
-        # in the match is not in the mask.
-        return 1 not in (match + section)
-
-    def _bounce(self) -> None:
-        """Bounces off whatever surface the character hit."""
+    def _collision_damage(self) -> None:
+        """Causes damage to the character from hitting a surface."""
         # Calculates the speed at which the character hits the ground.
         entry_speed = np.linalg.norm(self.kinematics.vel)
 
         # If the collision is a small one, the character stops and does
         # not bounce.
         if entry_speed < 5:
-            self.null_velocity()
+            self.kinematics.null_velocity()
             return
 
         # Damages the character in proportion to how damaged it was.
@@ -604,28 +540,35 @@ class Character(WorldObject):
         if self.health.hp <= 0:
             # Destroys the character.
             self.health.alive = False
-            self.null_velocity()
+            self.kinematics.null_velocity()
 
             # Sends a message depending on who killed the
             # character.
             logger.logger.log(f"{self} fought the ground and the ground won!")
 
-        # Bounces if the ground is flat.
-        if self._surrounding_is(np.array(((0, 0, 0), (0, 0, 0), (1, 1, 1)))):
-            self.set_vx(self.kinematics.vx * 0.8)
-            self.set_vy(self.kinematics.vy * -0.4)
+    @property
+    def _bounce_halting_speed(self) -> float:
+        """Returns the speed below which all bounces must not happen.
 
-        # Bounces if the ground is sloped downwards to the right.
-        elif self._surrounding_is(np.array(((0, 0, 0), (1, 0, 0), (-1, 1, -1)))):
-            self.set_vx(self.kinematics.vy * 0.6)
-            self.set_vy(self.kinematics.vx * 0.6)
+        Returns:
+            A value indicating the total speed below which bouncing stops.
+        """
+        return 3.0
 
-        # Bounces if the ground is sloped downwards to the left.
-        elif self._surrounding_is(np.array(((0, 0, 0), (0, 0, 1), (-1, 1, -1)))):
-            self.set_vx(self.kinematics.vy * -0.6)
-            self.set_vy(self.kinematics.vx * -0.6)
+    @property
+    def _bounce_factor(self) -> float:
+        """A bounce factor. The higher the factor, the greater the bounce.
 
-        # If the ground is too unpredictable, the character stops
-        # falling.
-        else:
-            self.null_velocity()
+        Returns:
+            A value indicating how elastically the character bounces.
+        """
+        return 0.4
+
+    def is_in_steady_state(self) -> bool:
+        """Determines whether or not the world object is going to remain still without provocation.
+
+        Returns:
+            True if the world object will remain still without provocation, False if it is moving
+            or could cause motion later.
+        """
+        return not np.any(self.kinematics.vel)
