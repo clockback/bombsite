@@ -15,6 +15,7 @@ from bombsite import settings, ticks
 from bombsite.utils import package_path
 from bombsite.world import gamestate, logger, world_objects
 from bombsite.world.characters import characters
+from bombsite.world.misc import explosion
 
 if TYPE_CHECKING:
     import bombsite.display
@@ -155,14 +156,14 @@ class PlayingField:
         Returns:
             Where the camera should be focused if there is a new focus, otherwise None.
         """
-        focus = self.process_tick()
+        focus = self._process_tick()
 
         for wo in self.world_objects:
             wo.update()
 
         return focus
 
-    def process_tick(self) -> tuple[int, int] | None:
+    def _process_tick(self) -> tuple[int, int] | None:
         """Assesses if the game state should change.
 
         Returns:
@@ -198,7 +199,7 @@ class PlayingField:
         # Switches to a new time if enough time has passed.
         elif self.game_state.between_turns:
             if time > settings.TIME_TO_WAIT_FOR_TURN:
-                if self.number_of_alive_teams() > 1:
+                if self._number_of_alive_teams() > 1:
                     next_team = self.next_team(self.last_controlled.details.team)
                     self.last_controlled = next(next_team.character_queue)
                     self.last_controlled.take_control()
@@ -210,11 +211,11 @@ class PlayingField:
                 else:
                     self.game_state.between_turns = False
                     self.game_state.end_game = True
-                    self.announce_victor()
+                    self._announce_victor()
 
         return None
 
-    def announce_victor(self) -> None:
+    def _announce_victor(self) -> None:
         """Creates a log message indicating the outcome of the match."""
         for team in self.teams:
             if team.check_if_alive():
@@ -232,12 +233,12 @@ class PlayingField:
             moving.
         """
         for wo in self.world_objects:
-            if np.any(wo.kinematics.vel):
+            if not wo.is_in_steady_state():
                 return False
 
         return True
 
-    def number_of_alive_teams(self) -> int:
+    def _number_of_alive_teams(self) -> int:
         """Returns the number of all the teams still alive.
 
         Returns:
@@ -382,43 +383,8 @@ class PlayingField:
         self.process_mask(lambda x, y, _mask: (x - pos[0]) ** 2 + (y - pos[1]) ** 2 > radius**2)
 
         # Affects nearby characters caught in the blast.
-        for character in self.characters:
-            # Ignores dead characters.
-            if not character.health.alive:
-                continue
-
-            # Finds the distance from the blast of the character.
-            vector = character.kinematics.pos - pos
-            distance = np.linalg.norm(vector)
-
-            # Only affects the character if sufficiently close.
-            if distance < radius:
-                # Creates a direction in which the character is flung,
-                # complete with upwards momentum.
-                blast_vector = vector + np.array((0, -25))
-                blast_direction = blast_vector / np.linalg.norm(blast_vector)
-
-                # Damages the character depending on how close the
-                # explosion was.
-                character.health.hp -= radius - int(distance)
-
-                # Kills the character if it runs out of health.
-                if character.health.hp <= 0:
-                    character.health.alive = False
-                    character.kinematics.vel = np.array((0.0, 0.0))
-
-                    # Sends a message depending on who killed the
-                    # character.
-                    if caused_by is character:
-                        logger.logger.log(f"{caused_by} has committed seppuku!")
-                    elif caused_by.details.team == character.details.team:
-                        logger.logger.log(f"{caused_by} accidentally killed {character}!")
-                    else:
-                        logger.logger.log(f"{caused_by} killed {character}!")
-
-                # Flings the character in the appropriate direction.
-                else:
-                    character.kinematics.vel += (blast_direction * (radius - distance)) * 0.1
+        for character in self.alive_characters():
+            explosion.check_character_caught_by_explosion(pos, character, caused_by, radius)
 
     def time_left_on_clock(self) -> float:
         """Determines how much time is left on the clock to perform an action.
@@ -446,6 +412,35 @@ class PlayingField:
         Yields:
             Each character in the world.
         """
-        for world_object in self.world_objects:
-            if isinstance(world_object, characters.Character):
-                yield world_object
+        yield from self.get_world_objects(characters.Character)
+
+    def find_collision_point(
+        self, lower_bound: npt.NDArray[np.int64], upper_bound: npt.NDArray[np.int64]
+    ) -> npt.NDArray[np.int64]:
+        """Finds the location at which a collision happens on the playing field.
+
+        Args:
+            lower_bound: The lower bound of positions in which to look.
+            upper_bound: The upper bound of positions in which to look.
+
+        Returns:
+            The location at which the world object is believed to have collided with the playing
+            field.
+
+        Raises:
+            Despite one hundred iterations of an approximation of the binary search algorithm, a
+            solution was not found. This should be impossible, even for the largest of playing
+            fields.
+        """
+        for _i in range(100):
+            centre = np.ceil((lower_bound + upper_bound) / 2).astype(int)
+
+            if np.array_equal(centre, upper_bound) or np.array_equal(centre, lower_bound):
+                return lower_bound
+
+            if self.collision_pixel(*centre):
+                upper_bound = centre
+            else:
+                lower_bound = centre
+
+        raise ValueError("Cannot resolve position.")

@@ -17,27 +17,24 @@ from bombsite.utils import fonts_path
 class Button(Widget):
     """A button is a single UI element that triggers an event when clicked."""
 
-    def __init__(self, text: str, callback: Callable, *, width: int, font_size: int = 40) -> None:
+    def __init__(
+        self, contents: str | pygame.Surface, callback: Callable, *, width: int, font_size: int = 40
+    ) -> None:
         """Loads the button.
 
         Args:
-            text: The text displayed in the button.
+            contents: The text or image displayed in the button.
             callback: The event triggered when the button is clicked.
             width: The width of the button.
             font_size: The font size used for the button text.
         """
         super().__init__()
 
-        # Finds the fonts used in the button.
-        normal_font = Font(fonts_path / "playpen_sans" / "PlaypenSans-Regular.ttf", font_size)
-        hover_font = Font(fonts_path / "playpen_sans" / "PlaypenSans-Bold.ttf", font_size)
+        self.width: int = width
 
-        # Renders the images for the button's text.
-        normal_render = normal_font.render(text, 1, pygame.color.Color("white"))
-        hover_render = hover_font.render(text, 1, pygame.color.Color("white"))
+        normal_render, hover_render = self._get_contents_images(contents, font_size=font_size)
 
         # Because the hover image is larger, it is used to determine the button size.
-        self.width: int = width
         self.height: int = hover_render.get_height() + 2 * UI_PADDING
 
         # Renders the images for the button itself.
@@ -45,6 +42,36 @@ class Button(Widget):
         self.hover_image = self._generate_button_surface(hover_render, self.width, self.height)
 
         self.callback: Callable[[], ModuleComponent | None | SystemExit] = callback
+
+    def _get_contents_images(
+        self, contents: str | pygame.Surface, *, font_size: int = 40
+    ) -> tuple[pygame.Surface, pygame.Surface]:
+        """Finds the images displayed inside the button.
+
+        Args:
+            contents: The contents of the button, be they text or an image.
+            font_size: The size of any rendered text for the button.
+
+        Returns:
+            The two images for the button, relating to when it is being hovered over.
+        """
+        if isinstance(contents, str):
+            # Finds the fonts used in the button.
+            normal_font = Font(fonts_path / "playpen_sans" / "PlaypenSans-Regular.ttf", font_size)
+            hover_font = Font(fonts_path / "playpen_sans" / "PlaypenSans-Bold.ttf", font_size)
+
+            # Renders the images for the button's contents.
+            normal_render = normal_font.render(contents, 1, pygame.color.Color("white"))
+            hover_render = hover_font.render(contents, 1, pygame.color.Color("white"))
+
+        # If an image is provided, uses a shrunken image as the normal image.
+        else:
+            normal_render = pygame.transform.smoothscale(
+                contents, (self.width - 10, self.width - 10)
+            )
+            hover_render = pygame.transform.smoothscale(contents, (self.width - 5, self.width - 5))
+
+        return normal_render, hover_render
 
     def get_image(self, mouse_x: int, mouse_y: int) -> pygame.Surface:
         """Returns the image of the button.

@@ -18,6 +18,7 @@ class MainMenu:
     """The main menu, where users can begin games, or quit.
 
     Attributes:
+        image: The image at the top of the main menu.
         menu: The menu UI used in the main menu.
     """
 
