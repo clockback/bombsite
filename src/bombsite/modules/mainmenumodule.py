@@ -40,11 +40,11 @@ class MainMenuModule(bombsite.modules.module.Module):
             Either None or a game exit.
         """
         # The game quits if given a quit command.
-        if event.type == pygame.QUIT:
-            return SystemExit()
-
-        # The game quits if the event was the user pressing the escape key.
-        elif event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
+        if (
+            event.type == pygame.QUIT
+            or event.type == pygame.KEYDOWN
+            and event.key == pygame.K_ESCAPE
+        ):
             return SystemExit()
 
         else:

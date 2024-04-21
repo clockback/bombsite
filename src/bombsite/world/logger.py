@@ -4,7 +4,6 @@ Copyright © 2024 - Elliot Simpson
 """
 
 from dataclasses import dataclass
-from typing import Optional
 
 import pygame
 
@@ -21,7 +20,7 @@ class LogMessage:
     text: str
     """The original string to be logged."""
 
-    _image: Optional[pygame.Surface]
+    _image: pygame.Surface | None
     """The rendering of the log message. If the message has expired, the image is discarded."""
 
     @property
