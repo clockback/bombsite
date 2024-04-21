@@ -3,7 +3,7 @@
 Copyright © 2024 - Elliot Simpson
 """
 
-from typing import Callable
+from collections.abc import Callable
 
 import pygame
 

@@ -6,12 +6,11 @@ Copyright © 2024 - Elliot Simpson
 from __future__ import annotations
 
 import random
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, Self
 
 import numpy as np
 import numpy.typing as npt
 import pygame.key
-from typing_extensions import Self
 
 import bombsite.display
 from bombsite import settings
@@ -110,10 +109,12 @@ class Character(WorldObject):
         Returns:
             Boolean for whether or not the character is standing on ground.
         """
-        if not self.kinematics.vy:
-            if self.pf.collision_pixel(self.kinematics.x, self.kinematics.y + 1):
-                if not self.pf.collision_pixel(self.kinematics.x, self.kinematics.y):
-                    return True
+        if (
+            self.kinematics.vy
+            or not self.pf.collision_pixel(self.kinematics.x, self.kinematics.y + 1)
+            or self.pf.collision_pixel(self.kinematics.x, self.kinematics.y)
+        ):
+            return True
 
         return False
 
@@ -387,9 +388,9 @@ class Character(WorldObject):
             self._is_standing
             and self.pf.game_state.controlled_can_attack
             or self.pf.game_state.controlled_can_just_walk
+            and not self.pf.collision_pixel(self.kinematics.x - 1, self.kinematics.y - 2)
         ):
-            if not self.pf.collision_pixel(self.kinematics.x - 1, self.kinematics.y - 2):
-                self.control.walking = Walking.LEFT
+            self.control.walking = Walking.LEFT
 
     def _walk_right(self) -> None:
         """Makes the character attempt to walk to the right."""
@@ -397,9 +398,9 @@ class Character(WorldObject):
             self._is_standing
             and self.pf.game_state.controlled_can_attack
             or self.pf.game_state.controlled_can_just_walk
+            and not self.pf.collision_pixel(self.kinematics.x + 1, self.kinematics.y - 2)
         ):
-            if not self.pf.collision_pixel(self.kinematics.x + 1, self.kinematics.y - 2):
-                self.control.walking = Walking.RIGHT
+            self.control.walking = Walking.RIGHT
 
     def _stop_walking(self) -> None:
         """Makes the character stop attempting to walk."""
@@ -413,7 +414,7 @@ class Character(WorldObject):
             self._stop_walking()
             self.control.preparing_attack = True
 
-    def prepare_attack(self, target_firing_strength: Optional[float] = None) -> None:
+    def prepare_attack(self, target_firing_strength: float | None = None) -> None:
         """Increases the duration over which the character's attack is
         occurring and releases the attack if it has gone on too long.
 
@@ -465,7 +466,7 @@ class Character(WorldObject):
         self.control.firing_angle = max((cap, self.control.firing_angle - 0.5))
 
     def angle_array(
-        self, angle: Optional[int] = None, facing_l: Optional[bool] = None
+        self, angle: int | None = None, facing_l: bool | None = None
     ) -> npt.NDArray[np.double]:
         """Converts the firing angle into a unit vector in that direction.
 

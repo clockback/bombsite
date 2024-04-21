@@ -5,7 +5,7 @@ Copyright © 2024 - Elliot Simpson
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 import numpy as np
 import numpy.typing as npt
@@ -37,7 +37,7 @@ class Display:
         self.vx: float = 0
         self.y: float = 0
         self.vy: float = 0
-        self.focus: Optional[npt.NDArray[np.int_]] = None
+        self.focus: npt.NDArray[np.int_] | None = None
 
     def set_focus(self, x: int, y: int) -> None:
         """Sets a new focus so that the display will pan to it.

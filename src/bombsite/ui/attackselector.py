@@ -5,8 +5,9 @@ Copyright © 2024 - Elliot Simpson
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from functools import partial
-from typing import TYPE_CHECKING, Callable
+from typing import TYPE_CHECKING
 
 import pygame
 

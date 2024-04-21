@@ -5,7 +5,7 @@ Copyright © 2024 - Elliot Simpson
 
 from __future__ import annotations
 
-from typing import Generator, Optional
+from collections.abc import Generator
 
 import pygame
 
@@ -46,7 +46,7 @@ class Team:
         self.characters: list[characters.Character] = []
         pf.teams.append(self)
         self.character_queue: Generator[characters.Character, None, None] = self.next_character()
-        self.ai: Optional[Computer] = self.get_ai(has_ai)
+        self.ai: Computer | None = self.get_ai(has_ai)
         self.attack: Attack = RocketLauncher()
 
     def __str__(self) -> str:
@@ -66,7 +66,7 @@ class Team:
         """
         return colours[self.team_number - 1]
 
-    def get_ai(self, has_ai: bool) -> Optional[Computer]:
+    def get_ai(self, has_ai: bool) -> Computer | None:
         """Obtains an AI computer player.
 
         Args:
@@ -83,11 +83,7 @@ class Team:
         Returns:
             Returns a boolean for whether there is at least one living character.
         """
-        for character in self.characters:
-            if character.health.alive:
-                return True
-
-        return False
+        return any(character.health.alive for character in self.characters)
 
     def next_character(self) -> Generator[characters.Character, None, None]:
         """Continuously cycles over the living characters.

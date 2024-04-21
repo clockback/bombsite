@@ -5,7 +5,8 @@ Copyright © 2024 - Elliot Simpson
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Callable, Generator, Optional, Type, TypeVar
+from collections.abc import Callable, Generator
+from typing import TYPE_CHECKING, TypeVar
 
 import numpy as np
 import numpy.typing as npt
@@ -98,7 +99,7 @@ class PlayingField:
         """
         self._last_controlled = character
 
-    def next_team(self, last_team: Optional[teams.Team] = None) -> teams.Team:
+    def next_team(self, last_team: teams.Team | None = None) -> teams.Team:
         """Finds the next team to play. If no previous team is provided, returns the first team.
 
         Args:
@@ -115,7 +116,7 @@ class PlayingField:
         if last_team is None or len(live_teams) == 1:
             return live_teams[0]
 
-        for team, team_after in zip(live_teams, live_teams[1:] + [live_teams[0]]):
+        for team, team_after in zip(live_teams, live_teams[1:] + [live_teams[0]], strict=True):
             if team is last_team:
                 return team_after
 
@@ -131,7 +132,7 @@ class PlayingField:
             if character.health.alive:
                 yield character
 
-    def get_centre(self) -> Optional[npt.NDArray[np.int_]]:
+    def get_centre(self) -> npt.NDArray[np.int_] | None:
         """Finds the centre point of all moving objects on screen.
 
         Returns:
@@ -197,21 +198,20 @@ class PlayingField:
                 self.refresh_tick()
 
         # Switches to a new time if enough time has passed.
-        elif self.game_state.between_turns:
-            if time > settings.TIME_TO_WAIT_FOR_TURN:
-                if self._number_of_alive_teams() > 1:
-                    next_team = self.next_team(self.last_controlled.details.team)
-                    self.last_controlled = next(next_team.character_queue)
-                    self.last_controlled.take_control()
-                    self.game_state.between_turns = False
-                    self.game_state.controlled_can_attack = True
-                    self.refresh_tick()
-                    return self.last_controlled.kinematics.intpos
+        elif self.game_state.between_turns and time > settings.TIME_TO_WAIT_FOR_TURN:
+            if self._number_of_alive_teams() > 1:
+                next_team = self.next_team(self.last_controlled.details.team)
+                self.last_controlled = next(next_team.character_queue)
+                self.last_controlled.take_control()
+                self.game_state.between_turns = False
+                self.game_state.controlled_can_attack = True
+                self.refresh_tick()
+                return self.last_controlled.kinematics.intpos
 
-                else:
-                    self.game_state.between_turns = False
-                    self.game_state.end_game = True
-                    self._announce_victor()
+            else:
+                self.game_state.between_turns = False
+                self.game_state.end_game = True
+                self._announce_victor()
 
         return None
 
@@ -232,11 +232,7 @@ class PlayingField:
             Boolean for whether or not anything is happening, such as a character or projectile
             moving.
         """
-        for wo in self.world_objects:
-            if not wo.is_in_steady_state():
-                return False
-
-        return True
+        return all(wo.is_in_steady_state() for wo in self.world_objects)
 
     def _number_of_alive_teams(self) -> int:
         """Returns the number of all the teams still alive.
@@ -279,7 +275,7 @@ class PlayingField:
         surface_alpha = np.array(self.image.get_view("A"), copy=False)
         surface_alpha[:, :] = self.mask * 255
 
-    def get_world_objects(self, world_object_type: Type[WO]) -> Generator[WO, None, None]:
+    def get_world_objects(self, world_object_type: type[WO]) -> Generator[WO, None, None]:
         """Finds all world objects of the corresponding type.
 
         Args:
