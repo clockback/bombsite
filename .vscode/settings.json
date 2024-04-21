@@ -1,17 +1,13 @@
 {
     "[python]": {
-        "editor.defaultFormatter": "ms-python.black-formatter",
+        "editor.defaultFormatter": "charliermarsh.ruff",
         "editor.formatOnSave": true,
         "editor.rulers": [100],
         "editor.codeActionsOnSave": {
             "source.organizeImports": "explicit"
         }
     },
-    "pylint.path": [
-        "${workspaceFolder}/.venv/bin/pylint"
-    ],
-    "pylint.args": [
-        "--rcfile=${workspaceFolder}/.settings/pylintrc"
-    ],
-    "esbonio.sphinx.confDir": ""
+    "ruff.path": [
+        "${workspaceFolder}/.venv/bin/ruff"
+    ]
 }
