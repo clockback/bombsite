@@ -36,7 +36,8 @@ The following commands should be used to ensure that the code is acceptable:
 
 .. code-block:: sh
 
-   $ python -m pylint --rcfile=.settings/pylintrc src/
+   $ python -m ruff check src/
+   $ python -m ruff format --check src/
    $ python -m mypy src/
 
 These checks must pass before being integrated into the master branch.
