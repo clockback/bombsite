@@ -110,6 +110,7 @@ class Display:
         Args:
             pf: The playing field on which the display applies.
         """
+        print("Hi %s" % str(123))
         if self.focus is None:
             return
 
