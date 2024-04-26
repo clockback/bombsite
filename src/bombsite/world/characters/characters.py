@@ -109,14 +109,11 @@ class Character(WorldObject):
         Returns:
             Boolean for whether or not the character is standing on ground.
         """
-        if (
-            self.kinematics.vy
-            or not self.pf.collision_pixel(self.kinematics.x, self.kinematics.y + 1)
-            or self.pf.collision_pixel(self.kinematics.x, self.kinematics.y)
-        ):
-            return True
-
-        return False
+        return (
+            not self.kinematics.vy
+            and self.pf.collision_pixel(self.kinematics.x, self.kinematics.y + 1)
+            and not self.pf.collision_pixel(self.kinematics.x, self.kinematics.y)
+        )
 
     @property
     def _moving_left(self) -> bool:
