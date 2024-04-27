@@ -10,6 +10,7 @@ from itertools import product
 from typing import TYPE_CHECKING
 
 import numpy as np
+import pygame
 
 from bombsite import settings
 from bombsite.ui.attackselector import AttackSelector
@@ -105,7 +106,7 @@ class Computer:
 
         self._set_targeting_character(nearest_enemy)
 
-    def scan_attacks(self, attack_type: type[Attack]) -> BattlePlan:
+    def scan_attacks(self, attack_type: type[Attack]) -> Generator[BattlePlan, None, None]:
         """Checks various options of attack.
 
         Args:
@@ -119,12 +120,6 @@ class Computer:
 
         attack = attack_type()
 
-        best_damage = 0
-        best_distance = 100000.0
-        should_face_l = controlled.facing_l
-        best_angle = (settings.MAXIMUM_FIRING_ANGLE + settings.MINIMUM_FIRING_ANGLE) / 2
-        best_strength = settings.MAXIMUM_FIRING_POWER // 2
-
         for facing_l, angle, strength in product(
             (True, False),
             np.linspace(settings.MINIMUM_FIRING_ANGLE, settings.MAXIMUM_FIRING_ANGLE, 10),
@@ -132,16 +127,7 @@ class Computer:
         ):
             attack_override = AttackOverride(facing_l, angle, strength)
             damage, distance = attack.release_phantom(controlled, attack_override)
-            if damage > best_damage or (damage == best_damage and distance < best_distance):
-                should_face_l = facing_l
-                best_damage = damage
-                best_distance = distance
-                best_angle = angle
-                best_strength = strength
-
-        return BattlePlan(
-            should_face_l, best_angle, best_strength, best_damage, best_distance, attack
-        )
+            yield BattlePlan(facing_l, angle, strength, damage, distance, attack)
 
     def run_ai(self, controlled: Character) -> None:
         """Operates the AI for the team.
@@ -155,42 +141,48 @@ class Computer:
         if self.targeting_character_or_none is None:
             self.find_nearest_enemy(controlled)
 
-        battleplan = self._find_new_battleplans()
-        if battleplan is None:
+        self._find_multiple_new_battleplans()
+        if self.battleplan is None or self.battleplan_generator is not None:
             return
 
-        self.team.attack = battleplan.weapon_used
-        controlled.facing_l = battleplan.is_firing_left
+        self.team.attack = self.battleplan.weapon_used
+        controlled.facing_l = self.battleplan.is_firing_left
 
-        if controlled.control.firing_angle < battleplan.firing_angle:
-            controlled.aim_upwards(battleplan.firing_angle)
+        if controlled.control.firing_angle < self.battleplan.firing_angle:
+            controlled.aim_upwards(self.battleplan.firing_angle)
 
-        elif controlled.control.firing_angle > battleplan.firing_angle:
-            controlled.aim_downwards(battleplan.firing_angle)
+        elif controlled.control.firing_angle > self.battleplan.firing_angle:
+            controlled.aim_downwards(self.battleplan.firing_angle)
 
         elif not controlled.control.preparing_attack:
             controlled.start_attack()
 
-        elif controlled.control.firing_strength < battleplan.firing_strength:
-            controlled.prepare_attack(battleplan.firing_strength)
+        elif controlled.control.firing_strength < self.battleplan.firing_strength:
+            controlled.prepare_attack(self.battleplan.firing_strength)
 
         else:
             controlled.release_attack()
             self.battleplan = None
             self._set_targeting_character(None)
 
-    def _find_new_battleplans(self) -> BattlePlan | None:
-        """Attempts to search through possible battleplans.
+    def _find_multiple_new_battleplans(self) -> None:
+        """Continuously checks battleplans until a suitable plan is found or time runs out."""
+        start_time = pygame.time.get_ticks()
+        milliseconds_per_tick = 1_000 / settings.TICKS_PER_SECOND
 
-        Returns:
-            A finalized battleplan if one has been found.
-        """
+        while pygame.time.get_ticks() - start_time < milliseconds_per_tick / 2:
+            self._find_new_battleplan()
+            if self.battleplan_generator is None:
+                break
+
+    def _find_new_battleplan(self) -> None:
+        """Finds a plausible battleplan and sets it, handling also the battleplan's generator."""
         # If a battleplan has not been found, and no battleplans have been searched, begins to look,
         # considering the first battleplan found the best so far.
         if self.battleplan is None and self.battleplan_generator is None:
             self.battleplan_generator = self.iterate_over_attack_plans()
             self.battleplan = next(self.battleplan_generator)
-            return None
+            return
 
         # Raises an error if no battle plan is found, despite having looked.
         elif self.battleplan is None:
@@ -199,7 +191,7 @@ class Computer:
         # If a battleplan is found, but there is no searching in process, it means the search is
         # already complete.
         elif self.battleplan_generator is None:
-            return self.battleplan
+            return
 
         # Finds the next attack-optimized battleplan.
         try:
@@ -208,7 +200,7 @@ class Computer:
         # If battleplans have been found, stops searching.
         except StopIteration:
             self.battleplan_generator = None
-            return self.battleplan
+            return
 
         # Replaces the current battleplan if it is inferior to the newly found battleplan.
         if new_battleplan.expected_damage > self.battleplan.expected_damage or (
@@ -217,12 +209,11 @@ class Computer:
         ):
             self.battleplan = new_battleplan
 
-        return None
-
     def iterate_over_attack_plans(self) -> Generator[BattlePlan, None, None]:
-        """Iterates over each attack and finds the best battle plan possible.
+        """Iterates over each attack and yields all possible associated battleplans.
 
         Yields:
-            The best battle plan for a given attack type.
+            Each possible battleplan.
         """
-        yield from map(self.scan_attacks, AttackSelector.all_attacks())
+        for attack in AttackSelector.all_attacks():
+            yield from self.scan_attacks(attack)
