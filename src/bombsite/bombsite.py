@@ -21,21 +21,6 @@ from bombsite.modules.moduleindex import get_module_type
 pygame.init()
 
 
-def get_screen() -> pygame.Surface:
-    """Creates a window for the game.
-
-    Returns:
-        The window.
-    """
-    # Creates the window.
-    screen = pygame.display.set_mode((settings.SCREEN_WIDTH, settings.SCREEN_HEIGHT))
-
-    # Sets a name for the window.
-    pygame.display.set_caption("Bombsite")
-
-    return screen
-
-
 def mainloop(
     module: bombsite.modules.module.Module,
 ) -> bombsite.modules.module.ModuleComponent | None | SystemExit:
