@@ -25,10 +25,23 @@ class MainMenuModule(bombsite.modules.module.Module):
         Args:
             module_component: The semi-custom data to be passed to the module.
         """
-        self.screen: pygame.Surface = module_component.screen or pygame.display.set_mode(
-            (settings.SCREEN_WIDTH, settings.SCREEN_HEIGHT)
-        )
+        self.screen: pygame.Surface = module_component.screen or self._get_screen()
         self.mainmenu: bombsite.ui.mainmenu.MainMenu = bombsite.ui.mainmenu.MainMenu()
+
+    @staticmethod
+    def _get_screen() -> pygame.Surface:
+        """Creates a window for the game.
+
+        Returns:
+            The window.
+        """
+        # Creates the window.
+        screen = pygame.display.set_mode((settings.SCREEN_WIDTH, settings.SCREEN_HEIGHT))
+
+        # Sets a name for the window.
+        pygame.display.set_caption("Bombsite")
+
+        return screen
 
     def process_event(self, event: pygame.event.Event) -> ModuleComponent | None | SystemExit:
         """Handles an incoming main menu event.
