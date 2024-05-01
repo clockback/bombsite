@@ -1,0 +1,120 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   width="32"
+   height="32"
+   viewBox="0 0 8.4666666 8.4666666"
+   version="1.1"
+   id="svg1"
+   inkscape:version="1.3.2 (091e20e, 2023-11-25)"
+   sodipodi:docname="bombsite-icon.svg"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:xlink="http://www.w3.org/1999/xlink"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <sodipodi:namedview
+     id="namedview1"
+     pagecolor="#ffffff"
+     bordercolor="#000000"
+     borderopacity="0.25"
+     inkscape:showpageshadow="2"
+     inkscape:pageopacity="0.0"
+     inkscape:pagecheckerboard="0"
+     inkscape:deskcolor="#d1d1d1"
+     inkscape:document-units="mm"
+     inkscape:zoom="11.313708"
+     inkscape:cx="4.8613591"
+     inkscape:cy="14.893437"
+     inkscape:window-width="1920"
+     inkscape:window-height="1043"
+     inkscape:window-x="1920"
+     inkscape:window-y="0"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="layer1"
+     showgrid="false" />
+  <defs
+     id="defs1">
+    <linearGradient
+       id="linearGradient6"
+       inkscape:collect="always">
+      <stop
+         style="stop-color:#282121;stop-opacity:1;"
+         offset="0"
+         id="stop6" />
+      <stop
+         style="stop-color:#000000;stop-opacity:1;"
+         offset="1"
+         id="stop7" />
+    </linearGradient>
+    <rect
+       x="-52.602951"
+       y="-213.84068"
+       width="211.46515"
+       height="258.48337"
+       id="rect2" />
+    <radialGradient
+       inkscape:collect="always"
+       xlink:href="#linearGradient6"
+       id="radialGradient7"
+       cx="23.586037"
+       cy="24.33379"
+       fx="23.586037"
+       fy="24.33379"
+       r="18.772827"
+       gradientUnits="userSpaceOnUse"
+       gradientTransform="scale(0.3571755)" />
+    <rect
+       x="-52.602951"
+       y="-213.84068"
+       width="211.46515"
+       height="258.48337"
+       id="rect2-7" />
+  </defs>
+  <g
+     inkscape:label="Layer 1"
+     inkscape:groupmode="layer"
+     id="layer1">
+    <text
+       xml:space="preserve"
+       transform="matrix(1.0583333,0,0,4.2333336,213.27058,890.77356)"
+       id="text2-3"
+       style="font-size:192px;white-space:pre;shape-inside:url(#rect2-7);display:inline;fill:#ffffff"><tspan
+         x="-52.603516"
+         y="219.33861"
+         id="tspan4"><tspan
+           dx="0 116.15991 179.5199"
+           id="tspan3">omb</tspan></tspan></text>
+    <g
+       id="g1"
+       transform="scale(0.50000003)">
+      <circle
+         style="fill:#000000;stroke-width:0.0945024"
+         id="path1"
+         cx="8.4666662"
+         cy="8.4666662"
+         r="8.4666662" />
+      <circle
+         style="fill:url(#radialGradient7);stroke-width:0.0945024"
+         id="path6"
+         cx="8.4243536"
+         cy="8.691433"
+         r="6.705194" />
+      <path
+         style="font-size:192px;font-family:Ubuntu;-inkscape-font-specification:Ubuntu;white-space:pre;fill:#ffffff"
+         d="m -2.2995156,-29.058941 q -4.608,0 -10.9440004,-0.576 -6.144,-0.384 -12.096,-1.152 -5.952,-0.768 -10.176,-1.92 V -160.77094 q 4.8,-1.344 10.752,-2.112 6.144,-0.768 12.096,-1.152 6.1440004,-0.384 11.1360004,-0.384 14.7839996,0 26.8799996,3.264 12.288,3.072 19.584,10.752 7.488,7.488 7.488,20.736 0,10.368 -5.376,17.856 -5.184,7.488 -14.208,10.56 11.52,3.071999 18.816,10.751999 7.296,7.488 7.296,22.464 0,19.2 -15.168,29.184 -14.976,9.792 -46.0799996,9.792 z m 1.53599998,-12.672 q 11.51999962,0 21.50399962,-2.112 10.176,-2.112 16.32,-7.872 6.144,-5.76 6.144,-16.512 0,-14.784 -9.984,-19.968 -9.984,-5.184 -27.2639996,-5.184 H -20.731516 v 50.496 q 3.072,0.384 8.64,0.768 5.5680004,0.384 11.32800038,0.384 z M -20.731516,-105.85894 H 3.4604844 q 9.5999996,0 17.0879996,-1.92 7.68,-1.92 12.096,-6.912 4.416,-5.184 4.416,-14.4 0,-12.48 -10.56,-17.472 -10.368,-5.184 -27.45599962,-5.184 -6.52799998,0 -11.52000038,0.384 -4.992,0.192 -8.256,0.768 z"
+         id="text2"
+         transform="matrix(0.09450268,0,0,0.09450268,7.8848308,17.761826)"
+         aria-label="B" />
+      <rect
+         style="fill:#000000;stroke-width:0.0945024"
+         id="rect1-5"
+         width="4.0179563"
+         height="2.6862233"
+         x="9.6013603"
+         y="-10.374675"
+         transform="rotate(47.426779)" />
+    </g>
+  </g>
+</svg>
