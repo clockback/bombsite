@@ -8,7 +8,7 @@ version = "0.1.0"
 authors = [{name = "Elliot Simpson", email = "elliot@p-s.co.nz"}]
 description = "Worms clone"
 requires-python = ">=3.11"
-dependencies = ["pygame==2.5.2", "numpy", "typing_extensions==4.8.0"]
+dependencies = ["pygame==2.5.2", "numpy"]
 
 [project.scripts]
 bombsite = "bombsite.bombsite:main"
