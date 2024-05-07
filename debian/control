@@ -1,0 +1,16 @@
+Source: bombsite
+Section: games
+Priority: optional
+Maintainer: Elliot Simpson <elliot@p-s.co.nz>
+Build-Depends: debhelper (>= 8.0.0)
+Standards-Version: 4.7.0
+Vcs-Git: git@github.com:clockback/bombsite.git
+Vcs-Browser: http://github.com/clockback/bombsite
+
+Package: bombsite
+Section: games
+Priority: optional
+Architecture: any
+Depends: ${misc:Depends}, python3 (>=3.11.0), python3-numpy (>=1.26.0), python3-pygame (>=2.5.0)
+Description: FOSS Worms clone
+ Enact violence upon your enemies by launching explosives at them.

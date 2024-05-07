@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+
+export PYTHONPATH=/usr/share/games/bombsite
+python3 /usr/share/games/bombsite/bombsite/main.py

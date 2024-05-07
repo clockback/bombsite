@@ -1,0 +1,7 @@
+[Desktop Entry]
+Version=0.1.0-alpha
+Type=Application
+Name=Bombsite
+Icon=bombsite
+Exec=sh -c "bombsite >/dev/null 2>&1"
+Categories=Game

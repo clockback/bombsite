@@ -1,3 +1,8 @@
 dist/
 __pycache__
-
+debian/.debhelper
+debian/bombsite
+debian/bombsite.substvars
+debian/debhelper-build-stamp
+debian/files
+debian/*.debhelper

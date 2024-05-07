@@ -4,14 +4,14 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "bombsite"
-version = "0.1.0"
+version = "0.1.0-alpha"
 authors = [{name = "Elliot Simpson", email = "elliot@p-s.co.nz"}]
 description = "Worms clone"
 requires-python = ">=3.11"
 dependencies = ["pygame==2.5.2", "numpy"]
 
 [project.scripts]
-bombsite = "bombsite.bombsite:main"
+bombsite = "bombsite.main:main"
 
 [tool.mypy]
 files = "src/"

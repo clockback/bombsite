@@ -37,7 +37,7 @@ class MainMenuModule(bombsite.modules.module.Module):
             The window.
         """
         # Sets the icon.
-        pygame.display.set_icon(pygame.image.load(images_path / "logo" / "bombsite-icon.png"))
+        pygame.display.set_icon(pygame.image.load(images_path / "logo" / "icon" / "bombsite.svg"))
 
         # Creates the window.
         screen = pygame.display.set_mode((settings.SCREEN_WIDTH, settings.SCREEN_HEIGHT))

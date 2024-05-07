@@ -1,0 +1,10 @@
+src/bombsite /usr/share/games/bombsite
+debian/launch/bombsite /usr/games
+debian/launch/bombsite.desktop /usr/share/applications
+src/bombsite/images/logo/icon/bombsite.svg /usr/share/icons/HighContrast/scalable/apps
+src/bombsite/images/logo/icon/16x16/bombsite.png /usr/share/icons/hicolor/16x16/apps
+src/bombsite/images/logo/icon/32x32/bombsite.png /usr/share/icons/hicolor/32x32/apps
+src/bombsite/images/logo/icon/64x64/bombsite.png /usr/share/icons/hicolor/64x64/apps
+src/bombsite/images/logo/icon/128x128/bombsite.png /usr/share/icons/hicolor/128x128/apps
+src/bombsite/images/logo/icon/256x256/bombsite.png /usr/share/icons/hicolor/256x256/apps
+src/bombsite/images/logo/icon/512x512/bombsite.png /usr/share/icons/hicolor/512x512/apps
