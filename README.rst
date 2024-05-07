@@ -6,7 +6,8 @@ Bombsite is a free and open-source video game inspired by WarMUX, itself inspire
 Installation
 ============
 
-There are no releases of Bombsite at present.
+The primary way to install Bombsite is via Debian package. At present, these can be found `here <https://github.com/clockback/bombsite/releases/latest>`_.
+Alternatively, Bombsite can be installed as a Python package using the wheel from the same location. In this case, it is recommended that it is installed with ``pipx``.
 
 Development
 ===========
@@ -28,6 +29,12 @@ A wheel distribution can be built like so:
 .. code-block:: sh
 
    $ python -m build
+
+A Debian package can be built like so:
+
+.. code-block:: sh
+
+   $ dpkg-buildpackage -b -uc -us -rfakeroot
 
 Quality checks
 --------------
